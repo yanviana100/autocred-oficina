@@ -6,16 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, FileText, ArrowRight, Eye, Share2 } from "lucide-react";
-import { mockQuotes } from "@/data/mock";
+import { Plus, Search, Eye, Share2, CheckCircle } from "lucide-react";
+import { useQuotes } from "@/hooks/useStore";
+import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
 import type { QuoteStatus } from "@/types";
 
 export default function OrcamentosPage() {
+  const { quotes, approve, update } = useQuotes();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
 
-  const filtered = mockQuotes.filter((q) => {
+  const filtered = quotes.filter((q) => {
     const matchSearch =
       q.customerName.toLowerCase().includes(search.toLowerCase()) ||
       q.serviceType.toLowerCase().includes(search.toLowerCase()) ||
@@ -25,6 +28,11 @@ export default function OrcamentosPage() {
   });
 
   const totalValue = filtered.reduce((acc, q) => acc + q.totalValue, 0);
+
+  const handleApprove = (id: string) => {
+    const result = approve(id);
+    if (result) toast(`OS ${result.serviceOrder.osNumber} criada automaticamente!`);
+  };
 
   return (
     <DashboardLayout title="Orçamentos" subtitle={`${filtered.length} orçamentos encontrados`}>
@@ -63,7 +71,7 @@ export default function OrcamentosPage() {
       {/* Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {(["rascunho", "enviado", "aguardando_financiamento", "concluido"] as QuoteStatus[]).map((status) => {
-          const count = mockQuotes.filter((q) => q.status === status).length;
+          const count = quotes.filter((q) => q.status === status).length;
           return (
             <Card key={status} className="border-0 shadow-none bg-white">
               <CardContent className="p-4 text-center">
@@ -121,6 +129,23 @@ export default function OrcamentosPage() {
                             <Share2 className="w-3.5 h-3.5" />
                           </Button>
                         </Link>
+                        {(q.status === "aguardando_aprovacao" || q.status === "enviado") && (
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            title="Aprovar orçamento (gera OS)"
+                            onClick={() => handleApprove(q.id)}
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {q.status === "rascunho" && (
+                          <Button
+                            variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
+                            onClick={() => { update(q.id, { status: "enviado" }); toast("Orçamento enviado ao cliente!"); }}
+                          >
+                            Enviar
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>

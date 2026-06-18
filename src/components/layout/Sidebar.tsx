@@ -17,6 +17,7 @@ import {
   Building2,
   Store,
   TrendingUp,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -35,8 +36,9 @@ const creditItems: NavItem[] = [
 
 const gestaoItems: NavItem[] = [
   { href: "/clientes", label: "Clientes", icon: Users },
-  { href: "/orcamentos", label: "Orçamentos", icon: FileText },
   { href: "/veiculos", label: "Veículos", icon: Car },
+  { href: "/orcamentos", label: "Orçamentos", icon: FileText },
+  { href: "/ordens", label: "Ordens de Serviço", icon: ClipboardList },
 ];
 
 const plataformaItems: NavItem[] = [

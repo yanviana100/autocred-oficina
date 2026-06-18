@@ -60,8 +60,39 @@ export interface Vehicle {
   model: string;
   year: number;
   plate: string;
+  color?: string;
+  chassis?: string;
   mileage: number;
   notes?: string;
+  createdAt?: string;
+}
+
+export type ServiceOrderStatus =
+  | "recebido"
+  | "em_analise"
+  | "em_execucao"
+  | "aguardando_peca"
+  | "finalizado"
+  | "entregue";
+
+export interface ServiceOrder {
+  id: string;
+  osNumber: string;
+  workshopId: string;
+  quoteId: string;
+  customerId: string;
+  customerName: string;
+  vehicleId: string;
+  vehicleInfo: string;
+  serviceType: string;
+  technicianName?: string;
+  status: ServiceOrderStatus;
+  entryDate: string;
+  expectedDate?: string;
+  completedDate?: string;
+  totalValue: number;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface QuoteItem {

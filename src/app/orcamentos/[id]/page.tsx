@@ -1,57 +1,64 @@
 "use client";
-import { useParams } from "next/navigation";
+import { use } from "react";
 import Link from "next/link";
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  ArrowLeft, User, Car, Wrench, CreditCard, Share2, FileText, AlertTriangle, TrendingDown,
-} from "lucide-react";
-import { mockQuotes } from "@/data/mock";
-import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor, calculateInstallment } from "@/lib/utils";
+import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy } from "lucide-react";
+import { useQuotes } from "@/hooks/useStore";
+import { useToast } from "@/components/ui/toast";
+import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
+import type { QuoteStatus } from "@/types";
 
-const INTEREST_RATE = 0.0199; // 1.99% ao mês (simulado)
+const statusFlow: QuoteStatus[] = ["rascunho", "enviado", "aguardando_aprovacao", "aprovado", "concluido"];
 
-export default function OrcamentoDetailPage() {
-  const { id } = useParams();
-  const quote = mockQuotes.find((q) => q.id === id);
-
-  const [showSimulator, setShowSimulator] = useState(false);
-  const [downPayment, setDownPayment] = useState(0);
-  const [installments, setInstallments] = useState(12);
+export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { get, update, approve } = useQuotes();
+  const { toast } = useToast();
+  const [quote, setQuote] = useState(() => get(id));
 
   if (!quote) {
     return (
-      <DashboardLayout title="Orçamento não encontrado">
-        <Link href="/orcamentos"><Button variant="ghost">Voltar</Button></Link>
+      <DashboardLayout title="Orçamento não encontrado" subtitle="">
+        <p className="text-sm text-slate-500 mb-4">Este orçamento não existe ou foi removido.</p>
+        <Link href="/orcamentos"><Button variant="outline" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Voltar</Button></Link>
       </DashboardLayout>
     );
   }
 
-  const { installmentValue, totalCost } = calculateInstallment(
-    quote.totalValue,
-    downPayment,
-    installments,
-    INTEREST_RATE
-  );
+  const handleStatusChange = (newStatus: QuoteStatus) => {
+    if (newStatus === "aprovado") {
+      const result = approve(quote.id);
+      if (result) {
+        setQuote(result.quote);
+        toast(`Orçamento aprovado! OS ${result.serviceOrder.osNumber} criada automaticamente.`);
+      }
+    } else {
+      const updated = update(quote.id, { status: newStatus });
+      if (updated) { setQuote(updated); toast("Status atualizado!"); }
+    }
+  };
 
-  const financedAmount = quote.totalValue - downPayment;
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/orcamento/publico?token=${quote.publicToken}`;
+    navigator.clipboard.writeText(url).then(() => toast("Link copiado!"));
+  };
+
+  const totalPecas     = quote.items.filter((i) => i.type === "peca").reduce((s, i) => s + i.total, 0);
+  const totalMaoDeObra = quote.items.filter((i) => i.type === "mao_de_obra").reduce((s, i) => s + i.total, 0);
 
   return (
     <DashboardLayout title={`Orçamento — ${quote.customerName}`} subtitle={`Criado em ${formatDate(quote.createdAt)}`}>
       <Link href="/orcamentos">
-        <Button variant="ghost" size="sm" className="gap-2 mb-4">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Button>
+        <Button variant="ghost" size="sm" className="gap-2 mb-4"><ArrowLeft className="w-4 h-4" />Voltar</Button>
       </Link>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 max-w-6xl">
         <div className="xl:col-span-2 space-y-5">
-          {/* Header info */}
+          {/* Header */}
           <Card>
             <CardContent className="p-5">
               <div className="flex items-start justify-between flex-wrap gap-3">
@@ -60,199 +67,121 @@ export default function OrcamentoDetailPage() {
                     <FileText className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-lg text-slate-900">{quote.serviceType}</h2>
+                    <h2 className="font-bold text-slate-900">{quote.serviceType}</h2>
                     <p className="text-sm text-slate-500">{quote.vehicleInfo}</p>
                   </div>
                 </div>
-                <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${quoteStatusColor[quote.status]}`}>
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${quoteStatusColor[quote.status]}`}>
                   {quoteStatusLabel[quote.status]}
                 </span>
               </div>
+              {quote.problemDescription && (
+                <p className="mt-4 text-sm text-slate-600 bg-slate-50 rounded-lg p-3 leading-relaxed">{quote.problemDescription}</p>
+              )}
             </CardContent>
           </Card>
 
-          {/* Cliente e Veículo */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Dados */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <User className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-slate-700">Cliente</span>
-                </div>
-                <p className="font-semibold text-slate-900">{quote.customerName}</p>
+              <CardContent className="p-4 flex items-center gap-3">
+                <User className="w-5 h-5 text-blue-500" />
+                <div><p className="text-xs text-slate-500">Cliente</p><p className="font-semibold">{quote.customerName}</p></div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Car className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-slate-700">Veículo</span>
-                </div>
-                <p className="font-semibold text-slate-900">{quote.vehicleInfo}</p>
+              <CardContent className="p-4 flex items-center gap-3">
+                <Car className="w-5 h-5 text-blue-500" />
+                <div><p className="text-xs text-slate-500">Veículo</p><p className="font-semibold text-sm">{quote.vehicleInfo}</p></div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Diagnóstico */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Wrench className="w-4 h-4" /> Diagnóstico e Descrição</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-700 leading-relaxed">{quote.problemDescription}</p>
-              <div className="mt-3 flex items-center gap-4 text-sm text-slate-500">
-                <span>⏱ Prazo estimado: <strong>{quote.estimatedDays} dia(s)</strong></span>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Itens */}
           <Card>
-            <CardHeader><CardTitle className="text-sm">Itens do Orçamento</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Itens do orçamento</CardTitle></CardHeader>
             <CardContent>
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-slate-500 text-xs">
-                    <th className="pb-2">Descrição</th>
-                    <th className="pb-2 text-center">Tipo</th>
-                    <th className="pb-2 text-center">Qtd</th>
-                    <th className="pb-2 text-right">Unit.</th>
-                    <th className="pb-2 text-right">Total</th>
+                <thead className="border-b">
+                  <tr className="text-left text-xs text-slate-400">
+                    <th className="pb-2">Descrição</th><th className="pb-2">Tipo</th><th className="pb-2 text-center">Qtd</th><th className="pb-2 text-right">Unit.</th><th className="pb-2 text-right">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {quote.items.map((item) => (
                     <tr key={item.id}>
-                      <td className="py-2.5 pr-2">{item.description}</td>
-                      <td className="py-2.5 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs ${item.type === "peca" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}>
-                          {item.type === "peca" ? "Peça" : "M.O."}
-                        </span>
-                      </td>
-                      <td className="py-2.5 text-center text-slate-600">{item.quantity}</td>
-                      <td className="py-2.5 text-right text-slate-600">{formatCurrency(item.unitPrice)}</td>
-                      <td className="py-2.5 text-right font-medium">{formatCurrency(item.total)}</td>
+                      <td className="py-2 pr-3 font-medium">{item.description}</td>
+                      <td className="py-2 pr-3"><span className={`px-2 py-0.5 rounded text-xs ${item.type === "peca" ? "bg-blue-50 text-blue-700" : "bg-orange-50 text-orange-700"}`}>{item.type === "peca" ? "Peça" : "M.O."}</span></td>
+                      <td className="py-2 text-center">{item.quantity}</td>
+                      <td className="py-2 text-right text-slate-500">{formatCurrency(item.unitPrice)}</td>
+                      <td className="py-2 text-right font-semibold">{formatCurrency(item.total)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="border-t">
-                  <tr>
-                    <td colSpan={4} className="pt-3 text-right font-bold text-slate-900">Total do orçamento</td>
-                    <td className="pt-3 text-right font-bold text-xl text-blue-600">{formatCurrency(quote.totalValue)}</td>
-                  </tr>
+                  <tr><td colSpan={4} className="pt-3 text-slate-500">Peças</td><td className="pt-3 text-right font-medium">{formatCurrency(totalPecas)}</td></tr>
+                  <tr><td colSpan={4} className="pb-1 text-slate-500">Mão de obra</td><td className="pb-1 text-right font-medium">{formatCurrency(totalMaoDeObra)}</td></tr>
+                  <tr className="text-lg font-bold border-t"><td colSpan={4} className="pt-2">Total</td><td className="pt-2 text-right text-blue-600">{formatCurrency(quote.totalValue)}</td></tr>
                 </tfoot>
               </table>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar ações */}
         <div className="space-y-4">
-          {/* Ações */}
+          {/* Alterar status */}
           <Card>
-            <CardHeader><CardTitle className="text-sm">Ações</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Alterar status</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button
-                className="w-full gap-2 bg-green-600 hover:bg-green-700"
-                onClick={() => setShowSimulator(!showSimulator)}
-              >
-                <CreditCard className="w-4 h-4" />
-                Simular Financiamento
-              </Button>
-              <Link href={`/orcamento/publico?token=${quote.publicToken}`} target="_blank">
-                <Button variant="outline" className="w-full gap-2">
-                  <Share2 className="w-4 h-4" /> Link do Cliente
+              <Select value={quote.status} onValueChange={(v) => handleStatusChange(v as QuoteStatus)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {statusFlow.map((s) => <SelectItem key={s} value={s}>{quoteStatusLabel[s]}</SelectItem>)}
+                  <SelectItem value="recusado">Recusado</SelectItem>
+                </SelectContent>
+              </Select>
+              {(quote.status === "enviado" || quote.status === "aguardando_aprovacao") && (
+                <Button className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => handleStatusChange("aprovado")}>
+                  <CheckCircle className="w-4 h-4" />Aprovar orçamento
                 </Button>
-              </Link>
+              )}
             </CardContent>
           </Card>
 
-          {/* Simulador */}
-          {showSimulator && (
-            <Card className="border-2 border-green-200">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm text-green-700 flex items-center gap-2">
-                  <TrendingDown className="w-4 h-4" /> Simulador de Financiamento
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-700 leading-relaxed">
-                    <strong>Simulação apenas.</strong> A aprovação depende de análise de crédito por parceiro financeiro autorizado. Valores aproximados.
-                  </p>
-                </div>
+          {/* Resumo financeiro */}
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Resumo</CardTitle></CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-slate-500">Prazo</span><span className="font-medium">{quote.estimatedDays} dia{quote.estimatedDays !== 1 ? "s" : ""}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Peças</span><span className="font-medium">{formatCurrency(totalPecas)}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Mão de obra</span><span className="font-medium">{formatCurrency(totalMaoDeObra)}</span></div>
+              <div className="flex justify-between text-base font-bold border-t pt-2"><span>Total</span><span className="text-blue-600">{formatCurrency(quote.totalValue)}</span></div>
+            </CardContent>
+          </Card>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Valor do reparo</Label>
-                  <Input value={formatCurrency(quote.totalValue)} disabled className="bg-slate-50 text-sm" />
-                </div>
+          {/* Ações */}
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full gap-2" onClick={handleCopyLink}>
+              <Copy className="w-4 h-4" />Copiar link do cliente
+            </Button>
+            <Link href={`/orcamento/publico?token=${quote.publicToken}`} target="_blank">
+              <Button variant="outline" className="w-full gap-2">
+                <Share2 className="w-4 h-4" />Ver página do cliente
+              </Button>
+            </Link>
+            <Link href={`/financiamento?quoteId=${quote.id}&amount=${quote.totalValue}`}>
+              <Button className="w-full gap-2 mt-1">
+                <CreditCard className="w-4 h-4" />Solicitar crédito
+              </Button>
+            </Link>
+          </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Entrada (opcional)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={quote.totalValue}
-                    value={downPayment}
-                    onChange={(e) => setDownPayment(Number(e.target.value))}
-                    placeholder="R$ 0,00"
-                    className="text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Número de parcelas</Label>
-                  <Select
-                    value={String(installments)}
-                    onValueChange={(v) => setInstallments(Number(v))}
-                  >
-                    <SelectTrigger className="text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[3, 6, 9, 12, 18, 24].map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n}x</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="p-3 bg-green-50 rounded-lg border border-green-200 space-y-2">
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>Valor financiado</span>
-                    <span className="font-medium">{formatCurrency(financedAmount)}</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>Taxa simulada</span>
-                    <span className="font-medium">{(INTEREST_RATE * 100).toFixed(2)}% a.m.</span>
-                  </div>
-                  <div className="flex justify-between text-xs text-slate-600">
-                    <span>Custo total estimado</span>
-                    <span className="font-medium">{formatCurrency(totalCost)}</span>
-                  </div>
-                  <div className="pt-2 border-t flex justify-between items-center">
-                    <span className="text-sm font-medium text-green-700">Parcela estimada</span>
-                    <span className="text-xl font-bold text-green-700">
-                      {installments}x {formatCurrency(installmentValue)}
-                    </span>
-                  </div>
-                </div>
-
-                <Link href={`/financiamento?quoteId=${quote.id}`}>
-                  <Button className="w-full text-sm bg-green-600 hover:bg-green-700">
-                    Iniciar pré-análise do cliente
-                  </Button>
-                </Link>
-              </CardContent>
+          {quote.notes && (
+            <Card className="bg-amber-50 border-amber-200">
+              <CardContent className="p-4"><p className="text-xs text-amber-800"><strong>Obs:</strong> {quote.notes}</p></CardContent>
             </Card>
           )}
-
-          <Card>
-            <CardContent className="p-4">
-              <p className="text-xs text-slate-500 text-center leading-relaxed">
-                Este orçamento tem validade de 7 dias. Para dúvidas, entre em contato com a oficina.
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </DashboardLayout>

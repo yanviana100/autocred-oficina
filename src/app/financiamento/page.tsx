@@ -10,7 +10,7 @@ import {
   AlertTriangle, CheckCircle, XCircle, Clock, CreditCard, User,
   ShieldCheck, ArrowRight, Info,
 } from "lucide-react";
-import { mockFinancingRequests } from "@/data/mock";
+import { useFinancingRequests } from "@/hooks/useStore";
 import { formatCurrency, formatDate, financingStatusLabel, financingStatusColor, riskLevelLabel, riskLevelColor, calcRiskLevel } from "@/lib/utils";
 import type { RiskLevel } from "@/types";
 
@@ -44,6 +44,7 @@ function RiskBadge({ level }: { level: RiskLevel }) {
 }
 
 export default function FinanciamentoPage() {
+  const { requests, create: createRequest } = useFinancingRequests();
   const [tab, setTab] = useState<"lista" | "nova">("lista");
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<RiskLevel | null>(null);
@@ -61,6 +62,31 @@ export default function FinanciamentoPage() {
       form.hasCreditRestriction,
       Number(form.requestedAmount)
     );
+    const amt = Number(form.requestedAmount);
+    const inst = Number(form.installments);
+    createRequest({
+      workshopId: "w1",
+      customerId: "",
+      quoteId: "",
+      customerName: form.fullName,
+      workshopName: "Auto Expert Silva & Filhos",
+      serviceType: "Serviço de oficina",
+      requestedAmount: amt,
+      installments: inst,
+      estimatedInstallment: Math.round((amt / inst) * 100) / 100,
+      status: risk === "alto" ? "reprovado" : risk === "baixo" ? "pre_aprovado" : "em_analise",
+      riskLevel: risk,
+      fullName: form.fullName,
+      cpf: form.cpf,
+      birthDate: form.birthDate,
+      monthlyIncome: Number(form.monthlyIncome),
+      profession: form.profession,
+      hasIncomeProof: form.hasIncomeProof === "sim",
+      hasCreditRestriction: form.hasCreditRestriction as "sim" | "nao" | "nao_sei",
+      termsAccepted: form.termsAccepted,
+      shopCommission: amt * 0.04,
+      autocredCommission: amt * 0.025,
+    });
     setResult(risk);
     setSubmitting(false);
   };
@@ -87,25 +113,25 @@ export default function FinanciamentoPage() {
             {[
               {
                 label: "Volume total",
-                value: formatCurrency(mockFinancingRequests.reduce((s, f) => s + f.requestedAmount, 0)),
+                value: formatCurrency(requests.reduce((s, f) => s + f.requestedAmount, 0)),
                 sub: "solicitado",
                 color: "text-blue-600",
               },
               {
                 label: "Comissão oficina (4%)",
-                value: formatCurrency(mockFinancingRequests.reduce((s, f) => s + (f.shopCommission ?? 0), 0)),
+                value: formatCurrency(requests.reduce((s, f) => s + (f.shopCommission ?? 0), 0)),
                 sub: "estimada total",
                 color: "text-emerald-600",
               },
               {
                 label: "Taxa de aprovação",
-                value: `${Math.round((mockFinancingRequests.filter((f) => ["pre_aprovado", "convertido"].includes(f.status)).length / mockFinancingRequests.length) * 100)}%`,
+                value: `${Math.round((requests.filter((f) => ["pre_aprovado", "convertido"].includes(f.status)).length / requests.length) * 100)}%`,
                 sub: "pré-aprovados",
                 color: "text-violet-600",
               },
               {
                 label: "Ticket médio",
-                value: formatCurrency(mockFinancingRequests.reduce((s, f) => s + f.requestedAmount, 0) / mockFinancingRequests.length),
+                value: formatCurrency(requests.reduce((s, f) => s + f.requestedAmount, 0) / requests.length),
                 sub: "por solicitação",
                 color: "text-amber-600",
               },
@@ -122,7 +148,7 @@ export default function FinanciamentoPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {(["novo", "em_analise", "pre_aprovado", "convertido"] as const).map((s) => {
-              const count = mockFinancingRequests.filter((f) => f.status === s).length;
+              const count = requests.filter((f) => f.status === s).length;
               return (
                 <Card key={s}>
                   <CardContent className="p-4 text-center">
@@ -137,7 +163,7 @@ export default function FinanciamentoPage() {
           </div>
 
           <div className="space-y-3">
-            {mockFinancingRequests.map((f) => (
+            {requests.map((f) => (
               <Card key={f.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">

@@ -4,13 +4,14 @@ import { createStore, nextOsNumber } from "@/lib/store";
 import {
   mockCustomers, mockVehicles, mockQuotes, mockFinancingRequests,
 } from "@/data/mock";
-import type { Customer, Vehicle, Quote, ServiceOrder, ServiceOrderStatus } from "@/types";
+import type { Customer, Vehicle, Quote, FinancingRequest, ServiceOrder, ServiceOrderStatus } from "@/types";
 
 // ─── Stores singleton (inicializam com seed na primeira vez) ─────────────────
-const customerStore = createStore<Customer>("ac_customers", "c", mockCustomers);
-const vehicleStore  = createStore<Vehicle>("ac_vehicles",  "v", mockVehicles);
-const quoteStore    = createStore<Quote>("ac_quotes",      "q", mockQuotes);
-const osStore       = createStore<ServiceOrder>("ac_orders", "os");
+const customerStore  = createStore<Customer>("ac_customers", "c", mockCustomers);
+const vehicleStore   = createStore<Vehicle>("ac_vehicles",  "v", mockVehicles);
+const quoteStore     = createStore<Quote>("ac_quotes",      "q", mockQuotes);
+const osStore        = createStore<ServiceOrder>("ac_orders", "os");
+const financingStore = createStore<FinancingRequest>("ac_financing", "f", mockFinancingRequests);
 
 // ─── useCustomers ─────────────────────────────────────────────────────────────
 export function useCustomers() {
@@ -142,6 +143,34 @@ export function useServiceOrders() {
       return o;
     },
     get: (id: string) => osStore.get(id),
+  };
+}
+
+// ─── useFinancingRequests ──────────────────────────────────────────────────────
+export function useFinancingRequests() {
+  const [requests, setRequests] = useState<FinancingRequest[]>([]);
+
+  const refresh = useCallback(() => setRequests(financingStore.list()), []);
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return {
+    requests,
+    create: (data: Omit<FinancingRequest, "id" | "createdAt">) => {
+      const r = financingStore.create(data);
+      refresh();
+      return r;
+    },
+    update: (id: string, data: Partial<FinancingRequest>) => {
+      const r = financingStore.update(id, data);
+      refresh();
+      return r;
+    },
+    remove: (id: string) => {
+      financingStore.remove(id);
+      refresh();
+    },
+    get: (id: string) => financingStore.get(id),
+    byCustomer: (customerId: string) => financingStore.list().filter((r) => r.customerId === customerId),
   };
 }
 

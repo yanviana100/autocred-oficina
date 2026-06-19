@@ -1,176 +1,386 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
-import { createStore, nextOsNumber } from "@/lib/store";
-import {
-  mockCustomers, mockVehicles, mockQuotes, mockFinancingRequests,
-} from "@/data/mock";
-import type { Customer, Vehicle, Quote, FinancingRequest, ServiceOrder, ServiceOrderStatus } from "@/types";
-
-// ─── Stores singleton (inicializam com seed na primeira vez) ─────────────────
-const customerStore  = createStore<Customer>("ac_customers", "c", mockCustomers);
-const vehicleStore   = createStore<Vehicle>("ac_vehicles",  "v", mockVehicles);
-const quoteStore     = createStore<Quote>("ac_quotes",      "q", mockQuotes);
-const osStore        = createStore<ServiceOrder>("ac_orders", "os");
-const financingStore = createStore<FinancingRequest>("ac_financing", "f", mockFinancingRequests);
+import { getSupabase, getWorkshopId } from "@/lib/db";
+import type { Customer, Vehicle, Quote, QuoteItem, FinancingRequest, ServiceOrder, ServiceOrderStatus } from "@/types";
 
 // ─── useCustomers ─────────────────────────────────────────────────────────────
 export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => setCustomers(customerStore.list()), []);
+  const refresh = useCallback(async () => {
+    const supabase = getSupabase();
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const { data } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .order("created_at", { ascending: false });
+    setCustomers((data ?? []).map(dbToCustomer));
+    setLoading(false);
+  }, []);
+
   useEffect(() => { refresh(); }, [refresh]);
 
   return {
     customers,
-    create: (data: Omit<Customer, "id" | "createdAt">) => {
-      const c = customerStore.create({ ...data, workshopId: "w1" });
-      refresh();
-      return c;
+    loading,
+    create: async (data: Omit<Customer, "id" | "createdAt">) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+      const { data: row } = await supabase.from("customers").insert({
+        workshop_id: workshopId,
+        name: data.name,
+        cpf: data.cpf,
+        whatsapp: data.whatsapp,
+        email: data.email,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+      }).select().single();
+      await refresh();
+      return row ? dbToCustomer(row) : null;
     },
-    update: (id: string, data: Partial<Customer>) => {
-      const c = customerStore.update(id, data);
-      refresh();
-      return c;
+    update: async (id: string, data: Partial<Customer>) => {
+      const supabase = getSupabase();
+      await supabase.from("customers").update({
+        name: data.name,
+        cpf: data.cpf,
+        whatsapp: data.whatsapp,
+        email: data.email,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+      }).eq("id", id);
+      await refresh();
     },
-    remove: (id: string) => {
-      customerStore.remove(id);
-      refresh();
+    remove: async (id: string) => {
+      const supabase = getSupabase();
+      await supabase.from("customers").delete().eq("id", id);
+      await refresh();
     },
-    get: (id: string) => customerStore.get(id),
+    get: async (id: string) => {
+      const supabase = getSupabase();
+      const { data } = await supabase.from("customers").select("*").eq("id", id).single();
+      return data ? dbToCustomer(data) : null;
+    },
   };
 }
 
 // ─── useVehicles ──────────────────────────────────────────────────────────────
 export function useVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => setVehicles(vehicleStore.list()), []);
+  const refresh = useCallback(async () => {
+    const supabase = getSupabase();
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const { data } = await supabase
+      .from("vehicles")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .order("created_at", { ascending: false });
+    setVehicles((data ?? []).map(dbToVehicle));
+    setLoading(false);
+  }, []);
+
   useEffect(() => { refresh(); }, [refresh]);
 
   return {
     vehicles,
-    byCustomer: (customerId: string) => vehicleStore.list().filter((v) => v.customerId === customerId),
-    create: (data: Omit<Vehicle, "id">) => {
-      const v = vehicleStore.create(data);
-      refresh();
-      return v;
+    loading,
+    byCustomer: (customerId: string) => vehicles.filter((v) => v.customerId === customerId),
+    create: async (data: Omit<Vehicle, "id">) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+      const { data: row } = await supabase.from("vehicles").insert({
+        customer_id: data.customerId,
+        workshop_id: workshopId,
+        brand: data.brand,
+        model: data.model,
+        year: data.year,
+        plate: data.plate,
+        color: data.color,
+        chassis: data.chassis,
+        mileage: data.mileage,
+        notes: data.notes,
+      }).select().single();
+      await refresh();
+      return row ? dbToVehicle(row) : null;
     },
-    update: (id: string, data: Partial<Vehicle>) => {
-      const v = vehicleStore.update(id, data);
-      refresh();
-      return v;
+    update: async (id: string, data: Partial<Vehicle>) => {
+      const supabase = getSupabase();
+      await supabase.from("vehicles").update({
+        brand: data.brand,
+        model: data.model,
+        year: data.year,
+        plate: data.plate,
+        color: data.color,
+        chassis: data.chassis,
+        mileage: data.mileage,
+        notes: data.notes,
+      }).eq("id", id);
+      await refresh();
     },
-    remove: (id: string) => {
-      vehicleStore.remove(id);
-      refresh();
+    remove: async (id: string) => {
+      const supabase = getSupabase();
+      await supabase.from("vehicles").delete().eq("id", id);
+      await refresh();
     },
-    get: (id: string) => vehicleStore.get(id),
+    get: async (id: string) => {
+      const supabase = getSupabase();
+      const { data } = await supabase.from("vehicles").select("*").eq("id", id).single();
+      return data ? dbToVehicle(data) : null;
+    },
   };
 }
 
 // ─── useQuotes ────────────────────────────────────────────────────────────────
 export function useQuotes() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => setQuotes(quoteStore.list()), []);
+  const refresh = useCallback(async () => {
+    const supabase = getSupabase();
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const { data } = await supabase
+      .from("quotes")
+      .select("*, quote_items(*)")
+      .eq("workshop_id", workshopId)
+      .order("created_at", { ascending: false });
+    setQuotes((data ?? []).map(dbToQuote));
+    setLoading(false);
+  }, []);
+
   useEffect(() => { refresh(); }, [refresh]);
 
   return {
     quotes,
-    byCustomer: (customerId: string) => quoteStore.list().filter((q) => q.customerId === customerId),
-    create: (data: Omit<Quote, "id" | "createdAt">) => {
-      const q = quoteStore.create(data);
-      refresh();
-      return q;
+    loading,
+    byCustomer: (customerId: string) => quotes.filter((q) => q.customerId === customerId),
+    get: async (id: string) => {
+      const supabase = getSupabase();
+      const { data } = await supabase
+        .from("quotes")
+        .select("*, quote_items(*)")
+        .eq("id", id)
+        .single();
+      return data ? dbToQuote(data) : null;
     },
-    update: (id: string, data: Partial<Quote>) => {
-      const q = quoteStore.update(id, data);
-      refresh();
-      return q;
-    },
-    approve: (id: string) => {
-      // Muda status do orçamento para aprovado e cria OS automaticamente
-      const q = quoteStore.update(id, { status: "aprovado" });
-      if (!q) return null;
+    create: async (data: Omit<Quote, "id" | "createdAt">) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+      const { data: row } = await supabase.from("quotes").insert({
+        workshop_id: workshopId,
+        customer_id: data.customerId,
+        vehicle_id: data.vehicleId,
+        customer_name: data.customerName,
+        vehicle_info: data.vehicleInfo,
+        service_type: data.serviceType,
+        problem_description: data.problemDescription,
+        labor_cost: data.laborCost,
+        total_value: data.totalValue,
+        estimated_days: data.estimatedDays,
+        notes: data.notes,
+        status: data.status,
+        public_token: data.publicToken,
+      }).select().single();
 
-      const vehicle = vehicleStore.get(q.vehicleId);
-      const os = osStore.create({
-        osNumber: nextOsNumber(),
-        workshopId: q.workshopId,
-        quoteId: q.id,
-        customerId: q.customerId,
-        customerName: q.customerName,
-        vehicleId: q.vehicleId,
-        vehicleInfo: q.vehicleInfo,
-        serviceType: q.serviceType,
-        status: "recebido" as ServiceOrderStatus,
-        entryDate: new Date().toISOString().split("T")[0],
-        totalValue: q.totalValue,
-        notes: q.notes,
-        createdAt: new Date().toISOString().split("T")[0],
-      });
-      refresh();
-      return { quote: q, serviceOrder: os };
+      if (row && data.items?.length) {
+        await supabase.from("quote_items").insert(
+          data.items.map((item) => ({
+            quote_id: row.id,
+            description: item.description,
+            type: item.type,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            total: item.total,
+          }))
+        );
+      }
+      await refresh();
+      return row ? { ...dbToQuote(row), items: data.items ?? [] } : null;
     },
-    remove: (id: string) => {
-      quoteStore.remove(id);
-      refresh();
+    update: async (id: string, data: Partial<Quote>) => {
+      const supabase = getSupabase();
+      await supabase.from("quotes").update({
+        status: data.status,
+        notes: data.notes,
+        estimated_days: data.estimatedDays,
+        total_value: data.totalValue,
+        labor_cost: data.laborCost,
+      }).eq("id", id);
+      await refresh();
     },
-    get: (id: string) => quoteStore.get(id),
+    approve: async (id: string) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+
+      // Atualiza status do orçamento
+      await supabase.from("quotes").update({ status: "aprovado" }).eq("id", id);
+
+      // Busca dados do orçamento
+      const { data: quote } = await supabase
+        .from("quotes")
+        .select("*, quote_items(*)")
+        .eq("id", id)
+        .single();
+
+      if (!quote) return null;
+
+      // Gera número da OS
+      const { data: counter } = await supabase
+        .from("os_counter")
+        .select("current_value")
+        .eq("id", 1)
+        .single();
+
+      const nextVal = (counter?.current_value ?? 0) + 1;
+      await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
+      const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
+
+      // Cria OS
+      const { data: os } = await supabase.from("service_orders").insert({
+        os_number: osNumber,
+        workshop_id: workshopId,
+        quote_id: id,
+        customer_id: quote.customer_id,
+        customer_name: quote.customer_name,
+        vehicle_id: quote.vehicle_id,
+        vehicle_info: quote.vehicle_info,
+        service_type: quote.service_type,
+        status: "recebido",
+        entry_date: new Date().toISOString().split("T")[0],
+        total_value: quote.total_value,
+        notes: quote.notes,
+      }).select().single();
+
+      await refresh();
+      return { quote: dbToQuote(quote), serviceOrder: os };
+    },
+    remove: async (id: string) => {
+      const supabase = getSupabase();
+      await supabase.from("quotes").delete().eq("id", id);
+      await refresh();
+    },
   };
 }
 
 // ─── useServiceOrders ─────────────────────────────────────────────────────────
 export function useServiceOrders() {
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => setOrders(osStore.list()), []);
+  const refresh = useCallback(async () => {
+    const supabase = getSupabase();
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const { data } = await supabase
+      .from("service_orders")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .order("created_at", { ascending: false });
+    setOrders((data ?? []).map(dbToServiceOrder));
+    setLoading(false);
+  }, []);
+
   useEffect(() => { refresh(); }, [refresh]);
 
   return {
     orders,
-    byCustomer: (customerId: string) => osStore.list().filter((o) => o.customerId === customerId),
-    updateStatus: (id: string, status: ServiceOrderStatus) => {
-      const updates: Partial<ServiceOrder> = { status };
-      if (status === "entregue") updates.completedDate = new Date().toISOString().split("T")[0];
-      const o = osStore.update(id, updates);
-      refresh();
-      return o;
+    loading,
+    byCustomer: (customerId: string) => orders.filter((o) => o.customerId === customerId),
+    updateStatus: async (id: string, status: ServiceOrderStatus) => {
+      const supabase = getSupabase();
+      const updates: Record<string, unknown> = { status };
+      if (status === "entregue") updates.completed_date = new Date().toISOString().split("T")[0];
+      await supabase.from("service_orders").update(updates).eq("id", id);
+      await refresh();
     },
-    update: (id: string, data: Partial<ServiceOrder>) => {
-      const o = osStore.update(id, data);
-      refresh();
-      return o;
+    update: async (id: string, data: Partial<ServiceOrder>) => {
+      const supabase = getSupabase();
+      await supabase.from("service_orders").update({
+        technician_name: data.technicianName,
+        status: data.status,
+        expected_date: data.expectedDate,
+        notes: data.notes,
+      }).eq("id", id);
+      await refresh();
     },
-    get: (id: string) => osStore.get(id),
+    get: async (id: string) => {
+      const supabase = getSupabase();
+      const { data } = await supabase.from("service_orders").select("*").eq("id", id).single();
+      return data ? dbToServiceOrder(data) : null;
+    },
   };
 }
 
 // ─── useFinancingRequests ──────────────────────────────────────────────────────
 export function useFinancingRequests() {
   const [requests, setRequests] = useState<FinancingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(() => setRequests(financingStore.list()), []);
+  const refresh = useCallback(async () => {
+    const supabase = getSupabase();
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const { data } = await supabase
+      .from("financing_requests")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .order("created_at", { ascending: false });
+    setRequests((data ?? []).map(dbToFinancingRequest));
+    setLoading(false);
+  }, []);
+
   useEffect(() => { refresh(); }, [refresh]);
 
   return {
     requests,
-    create: (data: Omit<FinancingRequest, "id" | "createdAt">) => {
-      const r = financingStore.create(data);
-      refresh();
-      return r;
+    loading,
+    byCustomer: (customerId: string) => requests.filter((r) => r.customerId === customerId),
+    create: async (data: Omit<FinancingRequest, "id" | "createdAt">) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+      const { data: row } = await supabase.from("financing_requests").insert({
+        workshop_id: workshopId,
+        customer_id: data.customerId || null,
+        quote_id: data.quoteId || null,
+        customer_name: data.customerName,
+        service_type: data.serviceType,
+        requested_amount: data.requestedAmount,
+        installments: data.installments,
+        estimated_installment: data.estimatedInstallment,
+        status: data.status,
+        risk_level: data.riskLevel,
+        full_name: data.fullName,
+        cpf: data.cpf,
+        birth_date: data.birthDate || null,
+        monthly_income: data.monthlyIncome,
+        profession: data.profession,
+        has_income_proof: data.hasIncomeProof,
+        has_credit_restriction: data.hasCreditRestriction,
+        terms_accepted: data.termsAccepted,
+        shop_commission: data.shopCommission,
+        autocred_commission: data.autocredCommission,
+        partner_name: data.partnerName,
+      }).select().single();
+      await refresh();
+      return row ? dbToFinancingRequest(row) : null;
     },
-    update: (id: string, data: Partial<FinancingRequest>) => {
-      const r = financingStore.update(id, data);
-      refresh();
-      return r;
+    update: async (id: string, data: Partial<FinancingRequest>) => {
+      const supabase = getSupabase();
+      await supabase.from("financing_requests").update({ status: data.status }).eq("id", id);
+      await refresh();
     },
-    remove: (id: string) => {
-      financingStore.remove(id);
-      refresh();
+    remove: async (id: string) => {
+      const supabase = getSupabase();
+      await supabase.from("financing_requests").delete().eq("id", id);
+      await refresh();
     },
-    get: (id: string) => financingStore.get(id),
-    byCustomer: (customerId: string) => financingStore.list().filter((r) => r.customerId === customerId),
   };
 }
 
@@ -187,35 +397,174 @@ export function useDashboardMetrics() {
   });
 
   useEffect(() => {
-    const customers = customerStore.list();
-    const vehicles  = vehicleStore.list();
-    const quotes    = quoteStore.list();
-    const orders    = osStore.list();
+    async function load() {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+      if (!workshopId) return;
 
-    const now = new Date();
-    const thisMonth = quotes.filter((q) => {
-      const d = new Date(q.createdAt);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
+      const [
+        { count: totalCustomers },
+        { count: totalVehicles },
+        { data: quotes },
+        { data: orders },
+      ] = await Promise.all([
+        supabase.from("customers").select("*", { count: "exact", head: true }).eq("workshop_id", workshopId),
+        supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("workshop_id", workshopId),
+        supabase.from("quotes").select("status, total_value, created_at").eq("workshop_id", workshopId),
+        supabase.from("service_orders").select("status, total_value").eq("workshop_id", workshopId),
+      ]);
 
-    const openOrders = orders.filter((o) => !["finalizado", "entregue"].includes(o.status));
-    const completedOrders = orders.filter((o) => ["finalizado", "entregue"].includes(o.status));
-    const approvedQuotes = quotes.filter((q) => ["aprovado", "concluido"].includes(q.status));
-    const revenueGenerated = completedOrders.reduce((s, o) => s + o.totalValue, 0);
-    const avgTicket = approvedQuotes.length
-      ? approvedQuotes.reduce((s, q) => s + q.totalValue, 0) / approvedQuotes.length
-      : 0;
+      const now = new Date();
+      const quotesThisMonth = (quotes ?? []).filter((q) => {
+        const d = new Date(q.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
 
-    setMetrics({
-      totalCustomers: customers.length,
-      totalVehicles: vehicles.length,
-      quotesThisMonth: thisMonth.length,
-      openOrders: openOrders.length,
-      completedOrders: completedOrders.length,
-      avgTicket,
-      revenueGenerated,
-    });
+      const openOrders = (orders ?? []).filter((o) => !["finalizado", "entregue"].includes(o.status)).length;
+      const completedOrders = (orders ?? []).filter((o) => ["finalizado", "entregue"].includes(o.status)).length;
+      const approvedQuotes = (quotes ?? []).filter((q) => ["aprovado", "concluido"].includes(q.status));
+      const avgTicket = approvedQuotes.length
+        ? approvedQuotes.reduce((s, q) => s + q.total_value, 0) / approvedQuotes.length
+        : 0;
+      const revenueGenerated = (orders ?? [])
+        .filter((o) => ["finalizado", "entregue"].includes(o.status))
+        .reduce((s, o) => s + o.total_value, 0);
+
+      setMetrics({
+        totalCustomers: totalCustomers ?? 0,
+        totalVehicles: totalVehicles ?? 0,
+        quotesThisMonth,
+        openOrders,
+        completedOrders,
+        avgTicket,
+        revenueGenerated,
+      });
+    }
+    load();
   }, []);
 
   return metrics;
+}
+
+// ─── Mappers DB → App ─────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToCustomer(row: any): Customer {
+  return {
+    id: row.id,
+    workshopId: row.workshop_id,
+    name: row.name,
+    cpf: row.cpf ?? "",
+    whatsapp: row.whatsapp ?? "",
+    email: row.email ?? "",
+    address: row.address ?? "",
+    city: row.city ?? "",
+    state: row.state ?? "",
+    createdAt: row.created_at?.split("T")[0] ?? "",
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToVehicle(row: any): Vehicle {
+  return {
+    id: row.id,
+    customerId: row.customer_id,
+    brand: row.brand ?? "",
+    model: row.model ?? "",
+    year: row.year ?? 0,
+    plate: row.plate ?? "",
+    color: row.color,
+    chassis: row.chassis,
+    mileage: row.mileage ?? 0,
+    notes: row.notes,
+    createdAt: row.created_at?.split("T")[0],
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToQuote(row: any): Quote {
+  return {
+    id: row.id,
+    workshopId: row.workshop_id,
+    customerId: row.customer_id,
+    vehicleId: row.vehicle_id,
+    customerName: row.customer_name ?? "",
+    vehicleInfo: row.vehicle_info ?? "",
+    serviceType: row.service_type ?? "",
+    problemDescription: row.problem_description ?? "",
+    laborCost: row.labor_cost ?? 0,
+    totalValue: row.total_value ?? 0,
+    estimatedDays: row.estimated_days ?? 1,
+    notes: row.notes,
+    status: row.status ?? "rascunho",
+    publicToken: row.public_token ?? "",
+    createdAt: row.created_at?.split("T")[0] ?? "",
+    items: (row.quote_items ?? []).map(dbToQuoteItem),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToQuoteItem(row: any): QuoteItem {
+  return {
+    id: row.id,
+    quoteId: row.quote_id,
+    description: row.description ?? "",
+    type: row.type ?? "peca",
+    quantity: row.quantity ?? 1,
+    unitPrice: row.unit_price ?? 0,
+    total: row.total ?? 0,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToServiceOrder(row: any): ServiceOrder {
+  return {
+    id: row.id,
+    osNumber: row.os_number ?? "",
+    workshopId: row.workshop_id,
+    quoteId: row.quote_id,
+    customerId: row.customer_id,
+    customerName: row.customer_name ?? "",
+    vehicleId: row.vehicle_id,
+    vehicleInfo: row.vehicle_info ?? "",
+    serviceType: row.service_type ?? "",
+    technicianName: row.technician_name,
+    status: row.status ?? "recebido",
+    entryDate: row.entry_date ?? "",
+    expectedDate: row.expected_date,
+    completedDate: row.completed_date,
+    totalValue: row.total_value ?? 0,
+    notes: row.notes,
+    createdAt: row.created_at?.split("T")[0] ?? "",
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function dbToFinancingRequest(row: any): FinancingRequest {
+  return {
+    id: row.id,
+    workshopId: row.workshop_id,
+    customerId: row.customer_id ?? "",
+    quoteId: row.quote_id ?? "",
+    customerName: row.customer_name ?? "",
+    workshopName: "",
+    serviceType: row.service_type ?? "",
+    requestedAmount: row.requested_amount ?? 0,
+    installments: row.installments ?? 12,
+    estimatedInstallment: row.estimated_installment ?? 0,
+    status: row.status ?? "novo",
+    riskLevel: row.risk_level ?? "medio",
+    fullName: row.full_name ?? "",
+    cpf: row.cpf ?? "",
+    birthDate: row.birth_date ?? "",
+    monthlyIncome: row.monthly_income ?? 0,
+    profession: row.profession ?? "",
+    hasIncomeProof: row.has_income_proof ?? false,
+    hasCreditRestriction: row.has_credit_restriction ?? "nao",
+    termsAccepted: row.terms_accepted ?? false,
+    shopCommission: row.shop_commission,
+    autocredCommission: row.autocred_commission,
+    partnerName: row.partner_name,
+    createdAt: row.created_at?.split("T")[0] ?? "",
+  };
 }

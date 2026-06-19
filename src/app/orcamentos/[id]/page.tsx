@@ -1,7 +1,7 @@
 "use client";
 import { use } from "react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy }
 import { useQuotes } from "@/hooks/useStore";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
-import type { QuoteStatus } from "@/types";
+import type { Quote, QuoteStatus } from "@/types";
 
 const statusFlow: QuoteStatus[] = ["rascunho", "enviado", "aguardando_aprovacao", "aprovado", "concluido"];
 
@@ -18,7 +18,16 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const { get, update, approve } = useQuotes();
   const { toast } = useToast();
-  const [quote, setQuote] = useState(() => get(id));
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [loadingQuote, setLoadingQuote] = useState(true);
+
+  useEffect(() => {
+    get(id).then((q) => { setQuote(q); setLoadingQuote(false); });
+  }, [id, get]);
+
+  if (loadingQuote) {
+    return <DashboardLayout title="Carregando..." subtitle=""><div className="animate-pulse h-4 bg-slate-200 rounded w-48" /></DashboardLayout>;
+  }
 
   if (!quote) {
     return (
@@ -29,16 +38,17 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
     );
   }
 
-  const handleStatusChange = (newStatus: QuoteStatus) => {
+  const handleStatusChange = async (newStatus: QuoteStatus) => {
     if (newStatus === "aprovado") {
-      const result = approve(quote.id);
+      const result = await approve(quote.id);
       if (result) {
         setQuote(result.quote);
-        toast(`Orçamento aprovado! OS ${result.serviceOrder.osNumber} criada automaticamente.`);
+        toast(`Orçamento aprovado! OS ${result.serviceOrder.os_number} criada automaticamente.`);
       }
     } else {
-      const updated = update(quote.id, { status: newStatus });
-      if (updated) { setQuote(updated); toast("Status atualizado!"); }
+      await update(quote.id, { status: newStatus });
+      setQuote({ ...quote, status: newStatus });
+      toast("Status atualizado!");
     }
   };
 

@@ -29,9 +29,9 @@ export default function OrcamentosPage() {
 
   const totalValue = filtered.reduce((acc, q) => acc + q.totalValue, 0);
 
-  const handleApprove = (id: string) => {
-    const result = approve(id);
-    if (result) toast(`OS ${result.serviceOrder.osNumber} criada automaticamente!`);
+  const handleApprove = async (id: string) => {
+    const result = await approve(id);
+    if (result) toast(`OS ${result.serviceOrder.os_number} criada automaticamente!`);
   };
 
   return (
@@ -141,7 +141,7 @@ export default function OrcamentosPage() {
                         {q.status === "rascunho" && (
                           <Button
                             variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
-                            onClick={() => { update(q.id, { status: "enviado" }); toast("Orçamento enviado ao cliente!"); }}
+                            onClick={async () => { await update(q.id, { status: "enviado" }); toast("Orçamento enviado ao cliente!"); }}
                           >
                             Enviar
                           </Button>

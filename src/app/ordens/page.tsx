@@ -41,10 +41,10 @@ export default function OrdensPage() {
     )
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const advance = (id: string, current: ServiceOrderStatus) => {
+  const advance = async (id: string, current: ServiceOrderStatus) => {
     const next = nextStatus[current];
     if (!next) return;
-    updateStatus(id, next);
+    await updateStatus(id, next);
     toast(`OS atualizada para: ${statusLabel[next]}`);
   };
 
@@ -119,7 +119,7 @@ export default function OrdensPage() {
                     )}
                     <div className="ml-auto flex gap-2">
                       {/* Atribuir técnico */}
-                      <TechnicianInput osId={o.id} current={o.technicianName} onSave={(name) => { update(o.id, { technicianName: name }); toast("Técnico atribuído!"); }} />
+                      <TechnicianInput osId={o.id} current={o.technicianName} onSave={async (name) => { await update(o.id, { technicianName: name }); toast("Técnico atribuído!"); }} />
                       {canAdvance && (
                         <Button size="sm" className="gap-1" onClick={() => advance(o.id, o.status)}>
                           <ChevronDown className="w-3.5 h-3.5 rotate-[-90deg]" /> Avançar

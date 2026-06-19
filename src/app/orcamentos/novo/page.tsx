@@ -77,7 +77,7 @@ export default function NovoOrcamentoPage() {
       total: i.quantity * i.unitPrice,
     }));
 
-    const newQuote = createQuote({
+    const newQuote = await createQuote({
       workshopId: "w1",
       customerId: form.customerId,
       vehicleId:  form.vehicleId,
@@ -98,9 +98,9 @@ export default function NovoOrcamentoPage() {
     setSaving(false);
 
     if (goToFinanciamento) {
-      router.push(`/financiamento?quoteId=${newQuote.id}&amount=${total}`);
+      router.push(`/financiamento?quoteId=${newQuote?.id}&amount=${total}`);
     } else {
-      router.push(`/orcamentos/${newQuote.id}`);
+      router.push(`/orcamentos/${newQuote?.id}`);
     }
   };
 

@@ -77,9 +77,9 @@ export default function ClientesPage() {
     c.whatsapp.includes(search) || c.cpf.includes(search)
   );
 
-  const handleSave = (data: Omit<Customer, "id" | "createdAt" | "workshopId">) => {
-    if (modal === "new") { create(data as Omit<Customer, "id" | "createdAt">); toast("Cliente cadastrado!"); }
-    else if (modal && typeof modal === "object") { update((modal as Customer).id, data); toast("Cliente atualizado!"); }
+  const handleSave = async (data: Omit<Customer, "id" | "createdAt" | "workshopId">) => {
+    if (modal === "new") { await create(data as Omit<Customer, "id" | "createdAt">); toast("Cliente cadastrado!"); }
+    else if (modal && typeof modal === "object") { await update((modal as Customer).id, data); toast("Cliente atualizado!"); }
     setModal(null);
   };
 
@@ -93,7 +93,7 @@ export default function ClientesPage() {
             <p className="text-sm text-slate-500 mb-6">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirmDelete(null)}>Cancelar</Button>
-              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => { remove(confirmDelete); setConfirmDelete(null); toast("Cliente removido.", "warning"); }}>Excluir</Button>
+              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={async () => { await remove(confirmDelete); setConfirmDelete(null); toast("Cliente removido.", "warning"); }}>Excluir</Button>
             </div>
           </div>
         </div>

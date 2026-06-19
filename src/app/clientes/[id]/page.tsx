@@ -1,5 +1,5 @@
 "use client";
-import { use } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { User, Car, FileText, ArrowLeft, Phone, Mail, MapPin, ClipboardList } from "lucide-react";
 import { useCustomers, useVehicles, useQuotes, useServiceOrders } from "@/hooks/useStore";
 import { formatDate, formatCurrency, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
+import type { Customer, Vehicle, Quote, ServiceOrder } from "@/types";
 
 const osStatusLabel: Record<string, string> = {
   recebido: "Recebido", em_analise: "Em análise", em_execucao: "Em execução",
@@ -25,10 +26,37 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
   const { byCustomer: quotesByCustomer } = useQuotes();
   const { byCustomer: ordersByCustomer } = useServiceOrders();
 
-  const customer = getCustomer(id);
-  const vehicles = vehiclesByCustomer(id);
-  const quotes   = quotesByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const orders   = ordersByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [orders, setOrders] = useState<ServiceOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const c = await getCustomer(id);
+      setCustomer(c);
+      setLoading(false);
+    }
+    load();
+  }, [id, getCustomer]);
+
+  // byCustomer é síncrono — filtra dos dados já carregados nos hooks
+  useEffect(() => {
+    setVehicles(vehiclesByCustomer(id));
+  }, [id, vehiclesByCustomer]);
+
+  useEffect(() => {
+    setQuotes(quotesByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  }, [id, quotesByCustomer]);
+
+  useEffect(() => {
+    setOrders(ordersByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+  }, [id, ordersByCustomer]);
+
+  if (loading) {
+    return <DashboardLayout title="Carregando..." subtitle=""><div className="animate-pulse h-4 bg-slate-200 rounded w-48" /></DashboardLayout>;
+  }
 
   if (!customer) {
     return (
@@ -48,7 +76,6 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Dados do cliente */}
         <div className="space-y-4">
           <Card>
             <CardContent className="p-5">
@@ -65,7 +92,6 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* KPIs rápidos */}
           <div className="grid grid-cols-3 gap-2">
             {[
               { label: "Veículos", value: vehicles.length, color: "text-blue-600" },
@@ -88,7 +114,6 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="xl:col-span-2 space-y-6">
-          {/* Veículos */}
           <Card>
             <CardHeader className="pb-2 flex-row items-center gap-2 space-y-0">
               <Car className="w-4 h-4 text-blue-600" />
@@ -112,7 +137,6 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* Orçamentos */}
           <Card>
             <CardHeader className="pb-2 flex-row items-center gap-2 space-y-0">
               <FileText className="w-4 h-4 text-violet-600" />
@@ -143,7 +167,6 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
-          {/* Ordens de serviço */}
           <Card>
             <CardHeader className="pb-2 flex-row items-center gap-2 space-y-0">
               <ClipboardList className="w-4 h-4 text-emerald-600" />

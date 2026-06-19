@@ -99,9 +99,9 @@ export default function VeiculosPage() {
     getCustomerName(v.customerId).toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSave = (data: Omit<Vehicle, "id">) => {
-    if (modal === "new") { create(data); toast("Veículo cadastrado!"); }
-    else if (modal && typeof modal === "object") { update((modal as Vehicle).id, data); toast("Veículo atualizado!"); }
+  const handleSave = async (data: Omit<Vehicle, "id">) => {
+    if (modal === "new") { await create(data); toast("Veículo cadastrado!"); }
+    else if (modal && typeof modal === "object") { await update((modal as Vehicle).id, data); toast("Veículo atualizado!"); }
     setModal(null);
   };
 
@@ -115,7 +115,7 @@ export default function VeiculosPage() {
             <p className="text-sm text-slate-500 mb-6">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirmDelete(null)}>Cancelar</Button>
-              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={() => { remove(confirmDelete); setConfirmDelete(null); toast("Veículo removido.", "warning"); }}>Excluir</Button>
+              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={async () => { await remove(confirmDelete); setConfirmDelete(null); toast("Veículo removido.", "warning"); }}>Excluir</Button>
             </div>
           </div>
         </div>

@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { mockWorkshop } from "@/data/mock";
 import { planLabel } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; amber?: boolean };
 
@@ -50,7 +52,14 @@ const plataformaItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut, user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/auth/login");
+  };
 
   const renderSection = (title: string, items: NavItem[]) => (
     <div className="pt-4 first:pt-0">
@@ -109,11 +118,12 @@ export function Sidebar() {
       {!collapsed && (
         <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
           <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Oficina</p>
-          <p className="text-sm font-medium truncate">{mockWorkshop.name}</p>
+          <p className="text-sm font-medium truncate">
+            {user?.user_metadata?.workshop_name ?? mockWorkshop.name}
+          </p>
           <span className="inline-block mt-1 text-xs bg-blue-600/30 text-blue-300 rounded px-2 py-0.5">
             Plano {planLabel[mockWorkshop.plan]}
           </span>
-          <p className="text-xs text-emerald-400 mt-1.5">Comissão: R$14.448</p>
         </div>
       )}
 
@@ -126,16 +136,16 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-2 py-3 border-t border-slate-700 space-y-1">
-        <Link
-          href="/auth/login"
+        <button
+          onClick={handleSignOut}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-700 hover:text-white transition-colors",
+            "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-400 hover:bg-slate-700 hover:text-white transition-colors",
             collapsed && "justify-center px-2"
           )}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />
           {!collapsed && "Sair"}
-        </Link>
+        </button>
       </div>
 
       {/* Collapse toggle */}

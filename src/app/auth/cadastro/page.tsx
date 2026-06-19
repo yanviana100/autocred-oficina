@@ -1,116 +1,225 @@
 "use client";
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Wrench, ArrowRight, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { CreditCard, Mail, Lock, User, Phone, Building2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const estados = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
+import { supabase } from "@/lib/supabase";
 
 export default function CadastroPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    officeName: "", cnpj: "", ownerName: "", whatsapp: "", email: "", city: "", state: "", password: "",
+    name: "",
+    ownerName: "",
+    whatsapp: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    router.push("/dashboard");
-  };
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4 shadow-xl">
-            <Wrench className="w-8 h-8 text-white" />
+  const handleCadastro = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (form.password !== form.confirmPassword) {
+      setError("As senhas não coincidem.");
+      return;
+    }
+    if (form.password.length < 6) {
+      setError("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          workshop_name: form.name,
+          owner_name: form.ownerName,
+          whatsapp: form.whatsapp,
+        },
+      },
+    });
+
+    if (signUpError) {
+      setError(signUpError.message);
+      setLoading(false);
+      return;
+    }
+
+    // Cria registro da oficina no banco
+    if (data.user) {
+      await supabase.from("workshops").insert({
+        id: data.user.id,
+        name: form.name,
+        owner: form.ownerName,
+        whatsapp: form.whatsapp,
+        email: form.email,
+        plan: "starter",
+      });
+    }
+
+    setSuccess(true);
+    setLoading(false);
+
+    setTimeout(() => router.push("/dashboard"), 2000);
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 mb-4">
+            <CreditCard className="w-8 h-8 text-emerald-400" />
           </div>
-          <h1 className="text-3xl font-bold text-white">AutoCred Oficina</h1>
-          <p className="text-blue-300 text-sm mt-1">Cadastre sua oficina gratuitamente</p>
+          <h2 className="text-xl font-bold text-white mb-2">Cadastro realizado!</h2>
+          <p className="text-slate-400 text-sm">Redirecionando para o dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4">
+            <CreditCard className="w-7 h-7 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-white">AutoCred Oficina</h1>
+          <p className="text-slate-400 text-sm mt-1">Cadastre sua oficina gratuitamente</p>
         </div>
 
-        <Card className="shadow-2xl border-0">
-          <CardHeader>
-            <CardTitle>Dados da Oficina</CardTitle>
-            <CardDescription>Preencha as informações para criar sua conta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2 space-y-1.5">
-                  <Label>Nome da Oficina *</Label>
-                  <Input placeholder="Oficina Mecânica Silva" value={form.officeName} onChange={(e) => update("officeName", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>CNPJ *</Label>
-                  <Input placeholder="00.000.000/0001-00" value={form.cnpj} onChange={(e) => update("cnpj", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Nome do Responsável *</Label>
-                  <Input placeholder="João Silva" value={form.ownerName} onChange={(e) => update("ownerName", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>WhatsApp *</Label>
-                  <Input placeholder="(11) 99999-9999" value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>E-mail *</Label>
-                  <Input type="email" placeholder="contato@oficina.com.br" value={form.email} onChange={(e) => update("email", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Cidade *</Label>
-                  <Input placeholder="São Paulo" value={form.city} onChange={(e) => update("city", e.target.value)} required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Estado *</Label>
-                  <Select onValueChange={(v) => update("state", v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {estados.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="md:col-span-2 space-y-1.5">
-                  <Label>Senha *</Label>
-                  <Input type="password" placeholder="Mínimo 8 caracteres" value={form.password} onChange={(e) => update("password", e.target.value)} required />
-                </div>
-              </div>
+        <div className="bg-slate-900 rounded-2xl p-8 border border-slate-800">
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
 
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-xs text-blue-700">
-                Ao se cadastrar, você concorda com nossos <a href="#" className="underline">Termos de Uso</a> e{" "}
-                <a href="#" className="underline">Política de Privacidade</a>. O plano Starter (R$99/mês) será ativado após o período de avaliação.
+          <form onSubmit={handleCadastro} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-slate-300">Nome da oficina *</Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  placeholder="Auto Center Silva"
+                  className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  value={form.name}
+                  onChange={(e) => update("name", e.target.value)}
+                  required
+                />
               </div>
+            </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Criando conta...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Criar conta gratuita <ArrowRight className="w-4 h-4" />
-                  </div>
-                )}
-              </Button>
-
-              <div className="text-center">
-                <Link href="/auth/login" className="text-sm text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1">
-                  <ArrowLeft className="w-3 h-3" /> Voltar para o login
-                </Link>
+            <div className="space-y-1.5">
+              <Label className="text-slate-300">Seu nome *</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  placeholder="João Silva"
+                  className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  value={form.ownerName}
+                  onChange={(e) => update("ownerName", e.target.value)}
+                  required
+                />
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300">WhatsApp *</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  placeholder="(11) 99999-9999"
+                  className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  value={form.whatsapp}
+                  onChange={(e) => update("whatsapp", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300">E-mail *</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  type="email"
+                  placeholder="sua@oficina.com.br"
+                  className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  value={form.email}
+                  onChange={(e) => update("email", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300">Senha *</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  className="pl-9 pr-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  value={form.password}
+                  onChange={(e) => update("password", e.target.value)}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-slate-300">Confirmar senha *</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Input
+                  type="password"
+                  placeholder="Repita a senha"
+                  className="pl-9 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  value={form.confirmPassword}
+                  onChange={(e) => update("confirmPassword", e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <Button type="submit" className="w-full mt-2" disabled={loading}>
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Criando conta...
+                </div>
+              ) : "Criar conta grátis"}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-slate-400 mt-6">
+            Já tem conta?{" "}
+            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300 font-medium">
+              Entrar
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

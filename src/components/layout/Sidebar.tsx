@@ -19,12 +19,11 @@ import {
   TrendingUp,
   ClipboardList,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { mockWorkshop } from "@/data/mock";
-import { planLabel } from "@/lib/utils";
+import { cn, planLabel } from "@/lib/utils";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { getSupabase } from "@/lib/db";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; amber?: boolean };
 
@@ -55,6 +54,16 @@ export function Sidebar() {
   const router = useRouter();
   const { signOut, user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+  const [workshopName, setWorkshopName] = useState<string>("");
+  const [workshopPlan, setWorkshopPlan] = useState<string>("starter");
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = getSupabase();
+    supabase.from("workshops").select("name, plan").eq("id", user.id).single().then(({ data }) => {
+      if (data) { setWorkshopName(data.name); setWorkshopPlan(data.plan); }
+    });
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -119,10 +128,10 @@ export function Sidebar() {
         <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
           <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Oficina</p>
           <p className="text-sm font-medium truncate">
-            {user?.user_metadata?.workshop_name ?? mockWorkshop.name}
+            {workshopName || user?.user_metadata?.workshop_name || "Minha Oficina"}
           </p>
           <span className="inline-block mt-1 text-xs bg-blue-600/30 text-blue-300 rounded px-2 py-0.5">
-            Plano {planLabel[mockWorkshop.plan]}
+            Plano {planLabel[workshopPlan as keyof typeof planLabel] ?? "Starter"}
           </span>
         </div>
       )}

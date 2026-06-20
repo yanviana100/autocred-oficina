@@ -43,7 +43,13 @@ export default function NovoOrcamentoPage() {
   ]);
   const [saving, setSaving] = useState(false);
 
-  const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const update = (k: string, v: string) => {
+    if (k === "customerId") {
+      setForm((f) => ({ ...f, customerId: v, vehicleId: "" }));
+    } else {
+      setForm((f) => ({ ...f, [k]: v }));
+    }
+  };
   const availableVehicles = vehicles.filter((v) => v.customerId === form.customerId);
 
   const addItem = () => setItems((p) => [...p, { id: String(Date.now()), description: "", type: "peca", quantity: 1, unitPrice: 0 }]);

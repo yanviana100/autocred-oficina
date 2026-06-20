@@ -1,263 +1,186 @@
 "use client";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
-import {
-  Building2, TrendingUp, DollarSign, CheckCircle, Star, Zap,
-  MapPin, Phone, Mail, CreditCard, Edit, ArrowUpRight,
-} from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockWorkshop, mockFinancingRequests, platformMonthlyData } from "@/data/mock";
-import { formatCurrency, planPrice } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Phone, Mail, MapPin, FileText, Save, CheckCircle } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { getSupabase } from "@/lib/db";
+import { useToast } from "@/components/ui/toast";
 
-const planLabels: Record<string, string> = {
-  starter: "Starter",
-  pro: "Pro",
-  premium: "Premium",
-};
-
-const planColors: Record<string, string> = {
-  starter: "bg-slate-100 text-slate-700",
-  pro: "bg-blue-100 text-blue-700",
-  premium: "bg-amber-100 text-amber-700",
-};
-
-const commissionHistory = mockFinancingRequests
-  .filter((r) => r.status === "convertido" || r.status === "pre_aprovado")
-  .map((r) => ({
-    id: r.id,
-    customer: r.customerName,
-    service: r.serviceType,
-    amount: r.requestedAmount,
-    shopComm: r.shopCommission ?? r.requestedAmount * 0.04,
-    autocredComm: r.autocredCommission ?? r.requestedAmount * 0.025,
-    partner: r.partnerName ?? "—",
-    date: r.createdAt,
-  }));
-
-const monthlyComm = platformMonthlyData.map((d) => ({
-  mes: d.mes,
-  comissao: Math.round(d.comissao * 0.04 * 1.8),
-}));
+const estados = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
+const planLabel: Record<string, string> = { starter: "Starter", pro: "Pro", premium: "Premium" };
+const planColor: Record<string, string> = { starter: "bg-slate-100 text-slate-700", pro: "bg-blue-100 text-blue-700", premium: "bg-amber-100 text-amber-700" };
 
 export default function PerfilPage() {
-  const plan = mockWorkshop.plan;
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [form, setForm] = useState({ name: "", owner: "", cnpj: "", whatsapp: "", email: "", city: "", state: "", plan: "starter" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = getSupabase();
+    supabase.from("workshops").select("*").eq("id", user.id).single().then(({ data }) => {
+      if (data) setForm({
+        name: data.name ?? "",
+        owner: data.owner ?? "",
+        cnpj: data.cnpj ?? "",
+        whatsapp: data.whatsapp ?? "",
+        email: data.email ?? "",
+        city: data.city ?? "",
+        state: data.state ?? "",
+        plan: data.plan ?? "starter",
+      });
+      setLoading(false);
+    });
+  }, [user]);
+
+  const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setSaving(true);
+    const supabase = getSupabase();
+    const { error } = await supabase.from("workshops").update({
+      name: form.name,
+      owner: form.owner,
+      cnpj: form.cnpj,
+      whatsapp: form.whatsapp,
+      city: form.city,
+      state: form.state,
+    }).eq("id", user.id);
+    setSaving(false);
+    if (error) { toast("Erro ao salvar. Tente novamente.", "error"); return; }
+    toast("Perfil atualizado com sucesso!");
+  };
+
+  if (loading) {
+    return <DashboardLayout title="Minha Oficina" subtitle=""><div className="animate-pulse h-4 bg-slate-200 rounded w-48" /></DashboardLayout>;
+  }
 
   return (
-    <DashboardLayout
-      title="Minha Oficina"
-      subtitle="Perfil, desempenho e histórico de comissões"
-    >
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Coluna esquerda — info + plano */}
-        <div className="space-y-4">
-          {/* Card identidade */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-slate-900 text-base leading-tight">{mockWorkshop.name}</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">{mockWorkshop.cnpj}</p>
-                  <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full mt-1 ${planColors[plan]}`}>
-                    Plano {planLabels[plan]}
-                  </span>
-                </div>
-              </div>
+    <DashboardLayout title="Minha Oficina" subtitle="Gerencie as informações da sua oficina">
+      <div className="max-w-2xl space-y-6">
 
-              <div className="space-y-2 text-sm">
-                {[
-                  { icon: Building2, label: "Responsável", value: mockWorkshop.owner },
-                  { icon: MapPin, label: "Cidade", value: `${mockWorkshop.city} — ${mockWorkshop.state}` },
-                  { icon: Phone, label: "WhatsApp", value: mockWorkshop.whatsapp },
-                  { icon: Mail, label: "E-mail", value: mockWorkshop.email },
-                ].map(({ icon: Icon, label, value }) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                    <span className="text-slate-500 flex-shrink-0">{label}:</span>
-                    <span className="text-slate-700 truncate">{value}</span>
+        {/* Plano atual */}
+        <Card className="border-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-blue-200 text-sm">Plano atual</p>
+              <p className="text-2xl font-bold mt-0.5">{planLabel[form.plan] ?? form.plan}</p>
+              <p className="text-blue-200 text-xs mt-1">Para upgrade, entre em contato com o suporte</p>
+            </div>
+            <span className={`px-4 py-2 rounded-full text-sm font-bold ${planColor[form.plan] ?? ""}`}>
+              {planLabel[form.plan] ?? form.plan}
+            </span>
+          </CardContent>
+        </Card>
+
+        {/* Formulário */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-blue-600" /> Dados da Oficina
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSave} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label>Nome da oficina *</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input className="pl-9" placeholder="Auto Center Silva" value={form.name} onChange={(e) => update("name", e.target.value)} required />
                   </div>
-                ))}
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Nome do responsável</Label>
+                  <Input placeholder="João Silva" value={form.owner} onChange={(e) => update("owner", e.target.value)} />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>CNPJ</Label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input className="pl-9" placeholder="00.000.000/0001-00" value={form.cnpj} onChange={(e) => update("cnpj", e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>WhatsApp</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input className="pl-9" placeholder="(11) 99999-9999" value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>E-mail</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input type="email" value={form.email} disabled className="pl-9 bg-slate-50 text-slate-500 cursor-not-allowed" />
+                  </div>
+                  <p className="text-xs text-slate-400">E-mail não pode ser alterado</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Cidade</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input className="pl-9" placeholder="São Paulo" value={form.city} onChange={(e) => update("city", e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Estado</Label>
+                  <Select value={form.state} onValueChange={(v) => update("state", v)}>
+                    <SelectTrigger><SelectValue placeholder="UF" /></SelectTrigger>
+                    <SelectContent>{estados.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <Button variant="outline" size="sm" className="w-full mt-4 gap-2">
-                <Edit className="w-3.5 h-3.5" /> Editar dados
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Card plano */}
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-semibold text-blue-900">Plano {planLabels[plan]}</p>
-                <Zap className="w-5 h-5 text-blue-500" />
-              </div>
-              <p className="text-2xl font-bold text-blue-900 mb-1">
-                {formatCurrency(planPrice[plan])}<span className="text-sm font-normal text-blue-600">/mês</span>
-              </p>
-              <ul className="mt-3 space-y-1.5 text-xs text-blue-800">
-                {[
-                  "Solicitações de crédito ilimitadas",
-                  "Pipeline Kanban completo",
-                  "Simulador com comissão",
-                  "Relatórios mensais",
-                  "Suporte WhatsApp prioritário",
-                ].map((f) => (
-                  <li key={f} className="flex items-center gap-1.5">
-                    <CheckCircle className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" /> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/investidor">
-                <Button size="sm" className="w-full mt-4 gap-1 bg-blue-700 hover:bg-blue-800">
-                  Upgrade para Premium <ArrowUpRight className="w-3.5 h-3.5" />
+              <div className="pt-2">
+                <Button type="submit" className="gap-2" disabled={saving}>
+                  {saving ? (
+                    <div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Salvando...</div>
+                  ) : (
+                    <><Save className="w-4 h-4" />Salvar alterações</>
+                  )}
                 </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
 
-        {/* Coluna direita — KPIs + gráfico + tabela */}
-        <div className="xl:col-span-2 space-y-4">
-          {/* KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              {
-                label: "Volume financiado",
-                value: formatCurrency(mockWorkshop.totalFinanced ?? 0),
-                sub: "total histórico",
-                icon: DollarSign,
-                color: "bg-violet-50 text-violet-600",
-              },
-              {
-                label: "Comissão acumulada",
-                value: formatCurrency(mockWorkshop.totalCommission ?? 0),
-                sub: "4% dos aprovados",
-                icon: TrendingUp,
-                color: "bg-emerald-50 text-emerald-600",
-              },
-              {
-                label: "Taxa de aprovação",
-                value: `${mockWorkshop.approvalRate ?? 0}%`,
-                sub: "média plataforma: 67%",
-                icon: CheckCircle,
-                color: "bg-blue-50 text-blue-600",
-              },
-              {
-                label: "Ticket médio",
-                value: formatCurrency(mockWorkshop.avgTicket ?? 0),
-                sub: "por financiamento",
-                icon: CreditCard,
-                color: "bg-amber-50 text-amber-600",
-              },
-              {
-                label: "Volume mensal",
-                value: formatCurrency(mockWorkshop.monthlyVolume ?? 0),
-                sub: "último mês",
-                icon: Star,
-                color: "bg-indigo-50 text-indigo-600",
-              },
-              {
-                label: "Pedidos ativos",
-                value: String(mockWorkshop.activeRequests ?? 0),
-                sub: "em andamento",
-                icon: Building2,
-                color: "bg-orange-50 text-orange-600",
-              },
-            ].map((kpi) => (
-              <Card key={kpi.label} className="card-hover">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-slate-500 leading-tight">{kpi.label}</p>
-                      <p className="text-xl font-bold text-slate-900 mt-1">{kpi.value}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">{kpi.sub}</p>
-                    </div>
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${kpi.color}`}>
-                      <kpi.icon className="w-4 h-4" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Gráfico comissão mensal */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Comissão mensal (R$)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={monthlyComm}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="mes" fontSize={12} stroke="#94a3b8" />
-                  <YAxis fontSize={12} stroke="#94a3b8" tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}K`} />
-                  <Tooltip formatter={(v: number) => [formatCurrency(v), "Comissão"]} />
-                  <Bar dataKey="comissao" name="Comissão" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Tabela de comissões */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Histórico de comissões</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {commissionHistory.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">
-                  Nenhuma comissão convertida ainda. <Link href="/financiamento" className="text-blue-600 hover:underline">Iniciar solicitação</Link>
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-slate-50 border-b">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Cliente</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Serviço</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Valor</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Comissão (4%)</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Parceiro</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Data</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {commissionHistory.map((row) => (
-                        <tr key={row.id} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 font-medium text-slate-800">{row.customer}</td>
-                          <td className="px-3 py-2.5 text-slate-600 max-w-[160px] truncate">{row.service}</td>
-                          <td className="px-3 py-2.5 font-semibold">{formatCurrency(row.amount)}</td>
-                          <td className="px-3 py-2.5">
-                            <span className="font-semibold text-emerald-700">{formatCurrency(row.shopComm)}</span>
-                          </td>
-                          <td className="px-3 py-2.5 text-slate-500 text-xs">{row.partner}</td>
-                          <td className="px-3 py-2.5 text-slate-400 text-xs">{row.date}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-emerald-50">
-                      <tr>
-                        <td colSpan={3} className="px-3 py-2 text-sm font-semibold text-slate-700">Total</td>
-                        <td className="px-3 py-2 text-sm font-bold text-emerald-700">
-                          {formatCurrency(commissionHistory.reduce((s, r) => s + r.shopComm, 0))}
-                        </td>
-                        <td colSpan={2} />
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        {/* Informações da conta */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-600" /> Conta
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">E-mail</span>
+              <span className="font-medium">{user?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Plano</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${planColor[form.plan] ?? ""}`}>{planLabel[form.plan] ?? form.plan}</span>
+            </div>
+            <div className="pt-2 border-t">
+              <p className="text-xs text-slate-400">Para alterar sua senha, use a opção &quot;Esqueci minha senha&quot; na tela de login.</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

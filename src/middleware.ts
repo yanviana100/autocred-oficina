@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Rotas públicas — não precisam de login
-  const publicRoutes = ["/auth/login", "/auth/cadastro", "/orcamento/publico", "/investidor"];
+  const publicRoutes = ["/auth/login", "/auth/cadastro", "/auth/nova-senha", "/orcamento/publico", "/investidor"];
   const isPublic = publicRoutes.some((r) => pathname.startsWith(r));
 
   if (!user && !isPublic) {

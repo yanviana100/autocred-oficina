@@ -36,16 +36,16 @@ const benefits = [
 
 const plans = [
   {
-    name: "Starter", price: "R$99", highlight: false,
-    features: ["30 orçamentos/mês", "1 usuário", "Simulador básico", "Suporte por email"],
+    name: "Starter", price: "R$150", highlight: false,
+    features: ["30 orçamentos/mês", "1 usuário", "Simulador básico", "Relatórios básicos", "Suporte por email"],
   },
   {
-    name: "Pro", price: "R$249", highlight: true,
-    features: ["Orçamentos ilimitados", "3 usuários", "Pipeline completo", "Link público", "Comissão 4%", "Suporte prioritário"],
+    name: "Pro", price: "R$250", highlight: true,
+    features: ["Orçamentos ilimitados", "3 usuários", "Pipeline completo", "Link público", "Relatórios avançados", "Suporte prioritário"],
   },
   {
-    name: "Premium", price: "R$499", highlight: false,
-    features: ["Tudo do Pro", "API de integração", "Múltiplos usuários", "Relatórios avançados", "Gerente dedicado", "Comissão 4%"],
+    name: "Premium", price: "R$399", highlight: false,
+    features: ["Tudo do Pro", "Usuários ilimitados", "Relatórios completos", "NF-e integrado", "Gerente dedicado"],
   },
 ];
 

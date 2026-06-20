@@ -63,18 +63,6 @@ export default function CadastroPage() {
       return;
     }
 
-    // Cria registro da oficina no banco
-    if (data.user) {
-      await supabase.from("workshops").insert({
-        id: data.user.id,
-        name: form.name,
-        owner: form.ownerName,
-        whatsapp: form.whatsapp,
-        email: form.email,
-        plan: "starter",
-      });
-    }
-
     setSuccess(true);
     setLoading(false);
 

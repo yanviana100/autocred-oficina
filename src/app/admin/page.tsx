@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -42,8 +43,25 @@ const calculatedMRR =
 
 type Tab = "operacional" | "financeiro" | "oficinas";
 
+const ADMIN_EMAILS = ["vianayan99@gmail.com"];
+
 export default function AdminPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("operacional");
+
+  useEffect(() => {}, []); // keep hook order stable
+
+  if (!user || !ADMIN_EMAILS.includes(user.email ?? "")) {
+    return (
+      <DashboardLayout title="Admin" subtitle="">
+        <div className="flex flex-col items-center justify-center py-32 text-center">
+          <Shield className="w-12 h-12 text-slate-300 mb-4" />
+          <p className="text-slate-600 font-medium">Acesso restrito</p>
+          <p className="text-sm text-slate-400 mt-1">Esta área é exclusiva para administradores AutoCred.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Painel Administrativo" subtitle="Visão geral da plataforma AutoCred">

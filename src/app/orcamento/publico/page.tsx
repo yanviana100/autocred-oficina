@@ -195,14 +195,18 @@ function OrcamentoPublicoContent() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
-          <p className="text-sm text-slate-600 mb-3">Dúvidas? Fale com a oficina:</p>
-          {!!workshop?.whatsapp && (
-            <a href={`tel:${String(workshop.whatsapp)}`} className="flex items-center justify-center gap-2 text-sm font-medium text-blue-600">
-              <Phone className="w-4 h-4" /> {String(workshop.whatsapp)}
+        {!!workshop?.whatsapp && (
+          <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
+            <p className="text-sm text-slate-600 mb-3">Dúvidas? Fale com a oficina:</p>
+            <a
+              href={`https://wa.me/55${String(workshop.whatsapp).replace(/\D/g, "")}`}
+              target="_blank"
+              className="inline-flex items-center gap-2 px-5 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors"
+            >
+              <Phone className="w-4 h-4" /> Chamar no WhatsApp
             </a>
-          )}
-        </div>
+          </div>
+        )}
 
         <p className="text-center text-xs text-slate-400 pb-6">
           AutoCred Oficina © 2024 · Esta plataforma não realiza operações financeiras. Simulações são apenas estimativas e não representam oferta de crédito.

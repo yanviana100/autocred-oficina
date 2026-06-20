@@ -1,18 +1,16 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
-  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from "recharts";
-import {
-  CreditCard, CheckCircle, DollarSign, TrendingUp, Zap, Coins, Building2, BarChart2,
-  Calculator, GitBranch, Users, Car, FileText, ClipboardList,
+  CheckCircle, DollarSign, TrendingUp, Zap,
+  Users, Car, FileText, ClipboardList, ArrowRight,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useDashboardMetrics, useQuotes, useServiceOrders } from "@/hooks/useStore";
-import { platformMonthlyData, mockCreditFlow } from "@/data/mock";
-import { formatCurrency, formatDate, financingStatusColor, financingStatusLabel, quoteStatusColor, quoteStatusLabel } from "@/lib/utils";
+import { formatCurrency, formatDate, quoteStatusColor, quoteStatusLabel } from "@/lib/utils";
+import { getSupabase, getWorkshopId } from "@/lib/db";
 
 type KpiColor = "blue" | "green" | "violet" | "amber" | "slate" | "emerald" | "indigo" | "orange";
 const colorMap: Record<KpiColor, string> = {
@@ -22,8 +20,12 @@ const colorMap: Record<KpiColor, string> = {
   indigo: "bg-indigo-50 text-indigo-600", orange: "bg-orange-50 text-orange-600",
 };
 
+const planLabel: Record<string, string> = { starter: "Starter", pro: "Pro", premium: "Premium" };
+const planPrice: Record<string, string> = { starter: "R$150/mês", pro: "R$250/mês", premium: "R$399/mês" };
+const planColor: Record<string, string> = { starter: "bg-slate-100 text-slate-600", pro: "bg-blue-50 text-blue-600", premium: "bg-amber-50 text-amber-600" };
+
 function Kpi({ title, value, sub, icon: Icon, color }: {
-  title: string; value: string; sub: string; icon: typeof CreditCard; color: KpiColor;
+  title: string; value: string; sub: string; icon: typeof Users; color: KpiColor;
 }) {
   return (
     <Card className="card-hover">
@@ -43,10 +45,70 @@ function Kpi({ title, value, sub, icon: Icon, color }: {
   );
 }
 
+// Onboarding checklist
+function OnboardingChecklist({ hasCustomers, hasVehicles, hasQuotes }: { hasCustomers: boolean; hasVehicles: boolean; hasQuotes: boolean }) {
+  const done = [hasCustomers, hasVehicles, hasQuotes].filter(Boolean).length;
+  if (done === 3) return null;
+  return (
+    <Card className="border-blue-200 bg-blue-50">
+      <CardContent className="p-5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-semibold text-blue-900">Primeiros passos ({done}/3)</p>
+          <span className="text-xs text-blue-600 font-medium">{Math.round((done / 3) * 100)}% concluído</span>
+        </div>
+        <div className="w-full h-1.5 bg-blue-200 rounded-full mb-4">
+          <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${(done / 3) * 100}%` }} />
+        </div>
+        <div className="space-y-2">
+          <ChecklistItem done={hasCustomers} label="Cadastre seu primeiro cliente" href="/clientes" />
+          <ChecklistItem done={hasVehicles} label="Adicione um veículo" href="/veiculos" />
+          <ChecklistItem done={hasQuotes} label="Crie seu primeiro orçamento" href="/orcamentos/novo" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ChecklistItem({ done, label, href }: { done: boolean; label: string; href: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${done ? "bg-emerald-500" : "border-2 border-blue-300"}`}>
+        {done && <CheckCircle className="w-3 h-3 text-white" />}
+      </div>
+      {done ? (
+        <span className="text-sm text-slate-500 line-through">{label}</span>
+      ) : (
+        <Link href={href} className="text-sm text-blue-700 font-medium hover:underline flex items-center gap-1">
+          {label} <ArrowRight className="w-3 h-3" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const metrics = useDashboardMetrics();
   const { quotes } = useQuotes();
   const { orders } = useServiceOrders();
+  const [plan, setPlan] = useState("starter");
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function loadPlan() {
+      const workshopId = await getWorkshopId();
+      if (!workshopId) return;
+      const supabase = getSupabase();
+      const { data } = await supabase.from("workshops").select("plan, trial_ends_at").eq("id", workshopId).single();
+      if (data) {
+        setPlan(data.plan ?? "starter");
+        if (data.trial_ends_at) {
+          const days = Math.ceil((new Date(data.trial_ends_at).getTime() - Date.now()) / 86400000);
+          setTrialDaysLeft(Math.max(0, days));
+        }
+      }
+    }
+    loadPlan();
+  }, []);
 
   const recentQuotes = [...quotes]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -57,8 +119,40 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 3);
 
+  const osStatusLabel: Record<string, string> = {
+    recebido: "Recebido", em_analise: "Em análise", em_execucao: "Em execução",
+    aguardando_peca: "Ag. peça", finalizado: "Finalizado", entregue: "Entregue",
+  };
+  const osStatusColor: Record<string, string> = {
+    recebido: "bg-slate-100 text-slate-700", em_analise: "bg-blue-100 text-blue-700",
+    em_execucao: "bg-violet-100 text-violet-700", aguardando_peca: "bg-amber-100 text-amber-700",
+    finalizado: "bg-emerald-100 text-emerald-700", entregue: "bg-green-100 text-green-700",
+  };
+
   return (
     <DashboardLayout title="Dashboard" subtitle="Visão geral da sua oficina">
+
+      {/* Trial banner */}
+      {trialDaysLeft !== null && trialDaysLeft <= 14 && (
+        <div className={`mb-4 rounded-xl px-4 py-3 flex items-center justify-between gap-3 ${trialDaysLeft <= 3 ? "bg-red-50 border border-red-200" : "bg-amber-50 border border-amber-200"}`}>
+          <p className={`text-sm font-medium ${trialDaysLeft <= 3 ? "text-red-700" : "text-amber-700"}`}>
+            {trialDaysLeft === 0 ? "Seu período de teste expirou." : `Seu período de teste termina em ${trialDaysLeft} dia(s).`}
+          </p>
+          <Link href="/billing">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-500 text-white text-xs">Ver planos</Button>
+          </Link>
+        </div>
+      )}
+
+      {/* Onboarding checklist */}
+      <div className="mb-4">
+        <OnboardingChecklist
+          hasCustomers={metrics.totalCustomers > 0}
+          hasVehicles={metrics.totalVehicles > 0}
+          hasQuotes={quotes.length > 0}
+        />
+      </div>
+
       {/* KPI ROW 1 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Kpi title="Clientes cadastrados" value={String(metrics.totalCustomers)} sub="total na base" icon={Users} color="blue" />
@@ -66,59 +160,32 @@ export default function DashboardPage() {
         <Kpi title="Orçamentos no mês" value={String(metrics.quotesThisMonth)} sub="mês atual" icon={FileText} color="amber" />
         <Kpi title="Ticket médio" value={metrics.avgTicket > 0 ? formatCurrency(metrics.avgTicket) : "—"} sub="orçamentos aprovados" icon={TrendingUp} color="green" />
       </div>
+
       {/* KPI ROW 2 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
         <Kpi title="OS em aberto" value={String(metrics.openOrders)} sub="em execução" icon={ClipboardList} color="orange" />
         <Kpi title="OS concluídas" value={String(metrics.completedOrders)} sub="finalizadas/entregues" icon={CheckCircle} color="emerald" />
         <Kpi title="Receita gerada" value={metrics.revenueGenerated > 0 ? formatCurrency(metrics.revenueGenerated) : "—"} sub="OS concluídas" icon={DollarSign} color="indigo" />
-        <Kpi title="Plano ativo" value="Pro" sub="R$249/mês" icon={Zap} color="slate" />
-      </div>
-
-      {/* CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Volume Financiado Mensal (R$)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={platformMonthlyData}>
-                <defs>
-                  <linearGradient id="gVol" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#2563eb" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="mes" fontSize={12} stroke="#94a3b8" />
-                <YAxis fontSize={12} stroke="#94a3b8" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Area type="monotone" dataKey="volume" name="Volume" stroke="#2563eb" fill="url(#gVol)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Financiamentos vs Aprovados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={platformMonthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="mes" fontSize={11} stroke="#94a3b8" />
-                <YAxis fontSize={12} stroke="#94a3b8" />
-                <Tooltip />
-                <Bar dataKey="financiamentos" name="Financiamentos" fill="#2563eb" radius={[4,4,0,0]} />
-                <Bar dataKey="aprovados" name="Aprovados" fill="#10b981" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
+        <Card className="card-hover">
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-slate-500">Plano ativo</p>
+                <p className="text-2xl font-bold text-slate-900 mt-1">{planLabel[plan] ?? plan}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{planPrice[plan] ?? ""}</p>
+              </div>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${planColor[plan] ?? colorMap.slate}`}>
+                <Zap className="w-5 h-5" />
+              </div>
+            </div>
+            <Link href="/billing">
+              <p className="text-xs text-blue-600 hover:underline mt-2">Ver planos →</p>
+            </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* OS EM ABERTO + AÇÕES RÁPIDAS */}
+      {/* RECENT QUOTES + QUICK ACTIONS */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mt-6">
         <Card className="lg:col-span-3">
           <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
@@ -127,7 +194,13 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {recentQuotes.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-4">Nenhum orçamento ainda.</p>
+              <div className="text-center py-8">
+                <FileText className="w-10 h-10 text-slate-200 mx-auto mb-2" />
+                <p className="text-sm text-slate-400">Nenhum orçamento ainda.</p>
+                <Link href="/orcamentos/novo">
+                  <Button size="sm" className="mt-3 gap-1"><FileText className="w-3 h-3" /> Criar orçamento</Button>
+                </Link>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -140,7 +213,7 @@ export default function DashboardPage() {
                   </tr></thead>
                   <tbody>
                     {recentQuotes.map((q) => (
-                      <tr key={q.id} className="border-b last:border-0">
+                      <tr key={q.id} className="border-b last:border-0 hover:bg-slate-50 cursor-pointer">
                         <td className="py-2.5 pr-3 font-medium">{q.customerName}</td>
                         <td className="py-2.5 pr-3 text-slate-600">{q.serviceType}</td>
                         <td className="py-2.5 pr-3 font-semibold">{formatCurrency(q.totalValue)}</td>
@@ -173,17 +246,14 @@ export default function DashboardPage() {
             <Link href="/ordens" className="block">
               <Button variant="outline" className="w-full justify-start gap-2"><ClipboardList className="w-4 h-4" /> Ordens de Serviço</Button>
             </Link>
-            <Link href="/simulador" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2"><Calculator className="w-4 h-4" /> Simulador</Button>
-            </Link>
-            <Link href="/financiamento" className="block">
-              <Button variant="outline" className="w-full justify-start gap-2"><CreditCard className="w-4 h-4" /> Solicitar Crédito</Button>
+            <Link href="/relatorios" className="block">
+              <Button variant="outline" className="w-full justify-start gap-2"><TrendingUp className="w-4 h-4" /> Relatórios</Button>
             </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* OS em aberto */}
+      {/* OS em andamento */}
       {recentOrders.length > 0 && (
         <Card className="mt-6">
           <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
@@ -199,10 +269,8 @@ export default function DashboardPage() {
                     <p className="text-xs text-slate-500">{o.customerName} · {o.vehicleInfo}</p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      { recebido: "bg-slate-100 text-slate-700", em_analise: "bg-blue-100 text-blue-700", em_execucao: "bg-violet-100 text-violet-700", aguardando_peca: "bg-amber-100 text-amber-700", finalizado: "bg-emerald-100 text-emerald-700", entregue: "bg-green-100 text-green-700" }[o.status]
-                    }`}>
-                      {{ recebido: "Recebido", em_analise: "Em análise", em_execucao: "Em execução", aguardando_peca: "Ag. peça", finalizado: "Finalizado", entregue: "Entregue" }[o.status]}
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${osStatusColor[o.status] ?? ""}`}>
+                      {osStatusLabel[o.status] ?? o.status}
                     </span>
                     <p className="text-xs text-slate-500 mt-1">{formatCurrency(o.totalValue)}</p>
                   </div>

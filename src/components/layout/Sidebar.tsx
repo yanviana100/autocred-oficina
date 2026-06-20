@@ -19,6 +19,7 @@ import {
   TrendingUp,
   ClipboardList,
   BarChart2,
+  Receipt,
 } from "lucide-react";
 import { cn, planLabel } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -45,13 +46,14 @@ const gestaoItems: NavItem[] = [
 ];
 
 const plataformaItems: NavItem[] = [
+  { href: "/billing", label: "Plano & Cobrança", icon: Receipt },
   { href: "/parceiros", label: "Parceiros", icon: Building2 },
   { href: "/perfil", label: "Minha Oficina", icon: Store },
   { href: "/admin", label: "Admin", icon: Shield },
   { href: "/investidor", label: "Para Investidores", icon: TrendingUp, amber: true },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut, user } = useAuth();
@@ -85,6 +87,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onClose}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 active

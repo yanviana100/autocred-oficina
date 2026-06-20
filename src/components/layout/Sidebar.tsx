@@ -18,6 +18,7 @@ import {
   Store,
   TrendingUp,
   ClipboardList,
+  BarChart2,
 } from "lucide-react";
 import { cn, planLabel } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -40,6 +41,7 @@ const gestaoItems: NavItem[] = [
   { href: "/veiculos", label: "Veículos", icon: Car },
   { href: "/orcamentos", label: "Orçamentos", icon: FileText },
   { href: "/ordens", label: "Ordens de Serviço", icon: ClipboardList },
+  { href: "/relatorios", label: "Relatórios", icon: BarChart2 },
 ];
 
 const plataformaItems: NavItem[] = [

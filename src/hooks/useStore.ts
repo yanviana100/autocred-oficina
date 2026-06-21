@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback, useEffect } from "react";
 import { getSupabase, getWorkshopId } from "@/lib/db";
-import type { Customer, Vehicle, Quote, QuoteItem, FinancingRequest, ServiceOrder, ServiceOrderStatus } from "@/types";
+import type { Customer, Vehicle, Quote, QuoteItem, FinancingRequest, ServiceOrder, ServiceOrderStatus, PaymentMethod, Technician } from "@/types";
 
 // ─── useCustomers ─────────────────────────────────────────────────────────────
 export function useCustomers() {
@@ -92,6 +92,7 @@ export function useVehicles() {
     vehicles,
     loading,
     byCustomer: (customerId: string) => vehicles.filter((v) => v.customerId === customerId),
+    byPlate: (plate: string) => vehicles.find((v) => v.plate.toLowerCase() === plate.toLowerCase()),
     create: async (data: Omit<Vehicle, "id">) => {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
@@ -204,7 +205,7 @@ export function useQuotes() {
       await refresh();
       return row ? { ...dbToQuote(row), items: data.items ?? [] } : null;
     },
-    update: async (id: string, data: Partial<Quote>) => {
+    update: async (id: string, data: Partial<Quote> & { items?: Quote["items"] }) => {
       const supabase = getSupabase();
       await supabase.from("quotes").update({
         status: data.status,
@@ -212,17 +213,34 @@ export function useQuotes() {
         estimated_days: data.estimatedDays,
         total_value: data.totalValue,
         labor_cost: data.laborCost,
+        service_type: data.serviceType,
+        problem_description: data.problemDescription,
       }).eq("id", id);
+
+      // Se veio lista de itens, substitui tudo
+      if (data.items) {
+        await supabase.from("quote_items").delete().eq("quote_id", id);
+        if (data.items.length > 0) {
+          await supabase.from("quote_items").insert(
+            data.items.map((item) => ({
+              quote_id: id,
+              description: item.description,
+              type: item.type,
+              quantity: item.quantity,
+              unit_price: item.unitPrice,
+              total: item.total,
+            }))
+          );
+        }
+      }
       await refresh();
     },
     approve: async (id: string) => {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
 
-      // Atualiza status do orçamento
       await supabase.from("quotes").update({ status: "aprovado" }).eq("id", id);
 
-      // Busca dados do orçamento
       const { data: quote } = await supabase
         .from("quotes")
         .select("*, quote_items(*)")
@@ -231,7 +249,6 @@ export function useQuotes() {
 
       if (!quote) return null;
 
-      // Gera número da OS
       const { data: counter } = await supabase
         .from("os_counter")
         .select("current_value")
@@ -242,7 +259,6 @@ export function useQuotes() {
       await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
       const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
 
-      // Cria OS
       const { data: os } = await supabase.from("service_orders").insert({
         os_number: osNumber,
         workshop_id: workshopId,
@@ -252,10 +268,13 @@ export function useQuotes() {
         vehicle_id: quote.vehicle_id,
         vehicle_info: quote.vehicle_info,
         service_type: quote.service_type,
+        problem_description: quote.problem_description,
         status: "recebido",
         entry_date: new Date().toISOString().split("T")[0],
         total_value: quote.total_value,
         notes: quote.notes,
+        payment_status: "pendente",
+        is_avulsa: false,
       }).select().single();
 
       await refresh();
@@ -293,6 +312,7 @@ export function useServiceOrders() {
     orders,
     loading,
     byCustomer: (customerId: string) => orders.filter((o) => o.customerId === customerId),
+    byVehicle: (vehicleId: string) => orders.filter((o) => o.vehicleId === vehicleId),
     updateStatus: async (id: string, status: ServiceOrderStatus) => {
       const supabase = getSupabase();
       const updates: Record<string, unknown> = { status };
@@ -302,18 +322,121 @@ export function useServiceOrders() {
     },
     update: async (id: string, data: Partial<ServiceOrder>) => {
       const supabase = getSupabase();
+      const payload: Record<string, unknown> = {};
+      if (data.technicianName !== undefined) payload.technician_name = data.technicianName;
+      if (data.status !== undefined) payload.status = data.status;
+      if (data.expectedDate !== undefined) payload.expected_date = data.expectedDate;
+      if (data.notes !== undefined) payload.notes = data.notes;
+      if (data.kmEntrada !== undefined) payload.km_entrada = data.kmEntrada;
+      if (data.kmSaida !== undefined) payload.km_saida = data.kmSaida;
+      if (data.totalValue !== undefined) payload.total_value = data.totalValue;
+      await supabase.from("service_orders").update(payload).eq("id", id);
+      await refresh();
+    },
+    markAsPaid: async (id: string, method: PaymentMethod) => {
+      const supabase = getSupabase();
       await supabase.from("service_orders").update({
-        technician_name: data.technicianName,
-        status: data.status,
-        expected_date: data.expectedDate,
-        notes: data.notes,
+        payment_status: "pago",
+        payment_method: method,
+        paid_at: new Date().toISOString(),
       }).eq("id", id);
       await refresh();
+    },
+    createAvulsa: async (data: {
+      customerId: string;
+      customerName: string;
+      vehicleId: string;
+      vehicleInfo: string;
+      serviceType: string;
+      problemDescription: string;
+      technicianName?: string;
+      totalValue: number;
+      kmEntrada?: number;
+      expectedDate?: string;
+      notes?: string;
+    }) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+
+      const { data: counter } = await supabase
+        .from("os_counter")
+        .select("current_value")
+        .eq("id", 1)
+        .single();
+
+      const nextVal = (counter?.current_value ?? 0) + 1;
+      await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
+      const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
+
+      const { data: row } = await supabase.from("service_orders").insert({
+        os_number: osNumber,
+        workshop_id: workshopId,
+        customer_id: data.customerId,
+        customer_name: data.customerName,
+        vehicle_id: data.vehicleId,
+        vehicle_info: data.vehicleInfo,
+        service_type: data.serviceType,
+        problem_description: data.problemDescription,
+        technician_name: data.technicianName ?? null,
+        status: "recebido",
+        entry_date: new Date().toISOString().split("T")[0],
+        expected_date: data.expectedDate ?? null,
+        total_value: data.totalValue,
+        km_entrada: data.kmEntrada ?? null,
+        notes: data.notes ?? null,
+        payment_status: "pendente",
+        is_avulsa: true,
+      }).select().single();
+
+      await refresh();
+      return row ? dbToServiceOrder(row) : null;
     },
     get: async (id: string) => {
       const supabase = getSupabase();
       const { data } = await supabase.from("service_orders").select("*").eq("id", id).single();
       return data ? dbToServiceOrder(data) : null;
+    },
+  };
+}
+
+// ─── useTechnicians ───────────────────────────────────────────────────────────
+export function useTechnicians() {
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    const supabase = getSupabase();
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const { data } = await supabase
+      .from("technicians")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .order("name");
+    setTechnicians((data ?? []).map((r) => ({
+      id: r.id,
+      workshopId: r.workshop_id,
+      name: r.name ?? "",
+      phone: r.phone,
+    })));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return {
+    technicians,
+    loading,
+    create: async (name: string, phone?: string) => {
+      const supabase = getSupabase();
+      const workshopId = await getWorkshopId();
+      await supabase.from("technicians").insert({ workshop_id: workshopId, name, phone: phone ?? null });
+      await refresh();
+    },
+    remove: async (id: string) => {
+      const supabase = getSupabase();
+      await supabase.from("technicians").delete().eq("id", id);
+      await refresh();
     },
   };
 }
@@ -411,7 +534,7 @@ export function useDashboardMetrics() {
         supabase.from("customers").select("*", { count: "exact", head: true }).eq("workshop_id", workshopId),
         supabase.from("vehicles").select("*", { count: "exact", head: true }).eq("workshop_id", workshopId),
         supabase.from("quotes").select("status, total_value, created_at").eq("workshop_id", workshopId),
-        supabase.from("service_orders").select("status, total_value").eq("workshop_id", workshopId),
+        supabase.from("service_orders").select("status, total_value, payment_status").eq("workshop_id", workshopId),
       ]);
 
       const now = new Date();
@@ -427,8 +550,8 @@ export function useDashboardMetrics() {
         ? approvedQuotes.reduce((s, q) => s + q.total_value, 0) / approvedQuotes.length
         : 0;
       const revenueGenerated = (orders ?? [])
-        .filter((o) => ["finalizado", "entregue"].includes(o.status))
-        .reduce((s, o) => s + o.total_value, 0);
+        .filter((o) => o.payment_status === "pago")
+        .reduce((s: number, o: Record<string, unknown>) => s + Number(o.total_value ?? 0), 0);
 
       setMetrics({
         totalCustomers: totalCustomers ?? 0,
@@ -528,6 +651,7 @@ function dbToServiceOrder(row: any): ServiceOrder {
     vehicleId: row.vehicle_id,
     vehicleInfo: row.vehicle_info ?? "",
     serviceType: row.service_type ?? "",
+    problemDescription: row.problem_description,
     technicianName: row.technician_name,
     status: row.status ?? "recebido",
     entryDate: row.entry_date ?? "",
@@ -535,6 +659,12 @@ function dbToServiceOrder(row: any): ServiceOrder {
     completedDate: row.completed_date,
     totalValue: row.total_value ?? 0,
     notes: row.notes,
+    kmEntrada: row.km_entrada,
+    kmSaida: row.km_saida,
+    paymentStatus: row.payment_status ?? "pendente",
+    paymentMethod: row.payment_method,
+    paidAt: row.paid_at,
+    isAvulsa: row.is_avulsa ?? false,
     createdAt: row.created_at?.split("T")[0] ?? "",
   };
 }

@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Phone, Mail, MapPin, FileText, Save, CheckCircle } from "lucide-react";
+import { Building2, Phone, Mail, MapPin, FileText, Save, CheckCircle, UserCog, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getSupabase } from "@/lib/db";
 import { useToast } from "@/components/ui/toast";
+import { useTechnicians } from "@/hooks/useStore";
 
 const estados = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
 const planLabel: Record<string, string> = { starter: "Starter", pro: "Pro", premium: "Premium" };
@@ -18,6 +19,9 @@ const planColor: Record<string, string> = { starter: "bg-slate-100 text-slate-70
 export default function PerfilPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { technicians, create: createTech, remove: removeTech } = useTechnicians();
+  const [newTechName, setNewTechName] = useState("");
+  const [newTechPhone, setNewTechPhone] = useState("");
   const [form, setForm] = useState({ name: "", owner: "", cnpj: "", whatsapp: "", email: "", city: "", state: "", plan: "starter" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -178,6 +182,48 @@ export default function PerfilPage() {
             </div>
             <div className="pt-2 border-t">
               <p className="text-xs text-slate-400">Para alterar sua senha, use a opção &quot;Esqueci minha senha&quot; na tela de login.</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Técnicos */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserCog className="w-4 h-4 text-blue-600" /> Equipe de Técnicos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              {technicians.length === 0 && (
+                <p className="text-sm text-slate-400">Nenhum técnico cadastrado. Adicione para selecioná-los nas OS.</p>
+              )}
+              {technicians.map((t) => (
+                <div key={t.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-sm text-slate-900">{t.name}</p>
+                    {t.phone && <p className="text-xs text-slate-500">{t.phone}</p>}
+                  </div>
+                  <button onClick={async () => { await removeTech(t.id); toast("Técnico removido."); }} className="text-slate-400 hover:text-red-500 p-1">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 pt-2 border-t">
+              <Input placeholder="Nome do técnico *" value={newTechName} onChange={(e) => setNewTechName(e.target.value)} className="flex-1" />
+              <Input placeholder="Telefone (opcional)" value={newTechPhone} onChange={(e) => setNewTechPhone(e.target.value)} className="w-36" />
+              <Button
+                onClick={async () => {
+                  if (!newTechName.trim()) { toast("Nome obrigatório.", "warning"); return; }
+                  await createTech(newTechName.trim(), newTechPhone.trim() || undefined);
+                  setNewTechName(""); setNewTechPhone("");
+                  toast("Técnico adicionado!");
+                }}
+                className="gap-1 flex-shrink-0"
+              >
+                <Plus className="w-4 h-4" />Adicionar
+              </Button>
             </div>
           </CardContent>
         </Card>

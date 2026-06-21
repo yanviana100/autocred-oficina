@@ -161,10 +161,10 @@ export default function VeiculosPage() {
           <Card key={v.id} className="hover:shadow-md transition-shadow">
             <CardContent className="p-5">
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
+                <a href={`/veiculos/${v.id}`} className="flex items-center gap-3 hover:opacity-80">
                   <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center"><Car className="w-5 h-5 text-blue-600" /></div>
                   <div><p className="font-semibold text-slate-900">{v.brand} {v.model}</p><p className="text-xs text-slate-500">{v.plate}</p></div>
-                </div>
+                </a>
                 <div className="flex gap-1">
                   <button onClick={() => setModal(v)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleDeleteClick(v.id)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>

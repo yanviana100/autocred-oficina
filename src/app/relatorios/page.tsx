@@ -1,8 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, ClipboardList, Users, Wrench } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { TrendingUp, TrendingDown, DollarSign, ClipboardList, Users, Wrench, Download } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { getSupabase, getWorkshopId } from "@/lib/db";
 import {
@@ -19,7 +21,13 @@ interface CustomerData { name: string; total: number; }
 interface OsStatusData { name: string; value: number; }
 
 export default function RelatoriosPage() {
+  const now = new Date();
+  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const today = now.toISOString().split("T")[0];
+
   const [loading, setLoading] = useState(true);
+  const [dateFrom, setDateFrom] = useState(firstOfMonth);
+  const [dateTo, setDateTo] = useState(today);
   const [faturamentoMes, setFaturamentoMes] = useState(0);
   const [faturamentoMesAnterior, setFaturamentoMesAnterior] = useState(0);
   const [ticketMedio, setTicketMedio] = useState(0);
@@ -30,42 +38,50 @@ export default function RelatoriosPage() {
   const [topServicos, setTopServicos] = useState<ServiceData[]>([]);
   const [topClientes, setTopClientes] = useState<CustomerData[]>([]);
   const [osStatus, setOsStatus] = useState<OsStatusData[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [rawOrdens, setRawOrdens] = useState<any[]>([]);
 
-  useEffect(() => {
-    async function load() {
-      const workshopId = await getWorkshopId();
-      if (!workshopId) return;
-      const supabase = getSupabase();
-      const now = new Date();
-      const mesAtual = now.getMonth();
-      const anoAtual = now.getFullYear();
+  const load = useCallback(async () => {
+    setLoading(true);
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const supabase = getSupabase();
+    const mesAtual = now.getMonth();
+    const anoAtual = now.getFullYear();
 
-      // OS de todos os tempos
-      const { data: ordens } = await supabase
-        .from("service_orders")
-        .select("*")
-        .eq("workshop_id", workshopId);
+    // OS filtradas pelo período
+    const { data: ordens } = await supabase
+      .from("service_orders")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .gte("created_at", dateFrom)
+      .lte("created_at", dateTo + "T23:59:59");
 
-      // Orçamentos
-      const { data: orcamentos } = await supabase
-        .from("quotes")
-        .select("*")
-        .eq("workshop_id", workshopId);
+    // OS do mês anterior (para variação — sempre fixo)
+    const { data: ordensAnterior } = await supabase
+      .from("service_orders")
+      .select("total_value, created_at")
+      .eq("workshop_id", workshopId);
+
+    // Orçamentos
+    const { data: orcamentos } = await supabase
+      .from("quotes")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .gte("created_at", dateFrom)
+      .lte("created_at", dateTo + "T23:59:59");
+
+    setRawOrdens(ordens ?? []);
 
       if (ordens) {
-        // Faturamento mês atual
-        const ossMesAtual = ordens.filter((o) => {
-          const d = new Date(o.created_at);
-          return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
-        });
-        const ossMesAnterior = ordens.filter((o) => {
+        const ossMesAnterior = (ordensAnterior ?? []).filter((o) => {
           const d = new Date(o.created_at);
           const mesAnt = mesAtual === 0 ? 11 : mesAtual - 1;
           const anoAnt = mesAtual === 0 ? anoAtual - 1 : anoAtual;
           return d.getMonth() === mesAnt && d.getFullYear() === anoAnt;
         });
 
-        const fatAtual = ossMesAtual.reduce((s: number, o: Record<string,unknown>) => s + Number(o.total_value ?? 0), 0);
+        const fatAtual = ordens.reduce((s: number, o: Record<string,unknown>) => s + Number(o.total_value ?? 0), 0);
         const fatAnterior = ossMesAnterior.reduce((s: number, o: Record<string,unknown>) => s + Number(o.total_value ?? 0), 0);
         setFaturamentoMes(fatAtual);
         setFaturamentoMesAnterior(fatAnterior);
@@ -140,12 +156,30 @@ export default function RelatoriosPage() {
       setLoading(false);
     }
     load();
-  }, []);
+  }, [dateFrom, dateTo]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { load(); }, [load]);
 
   const variacaoFaturamento = faturamentoMesAnterior > 0
     ? ((faturamentoMes - faturamentoMesAnterior) / faturamentoMesAnterior) * 100
     : 0;
   const taxaConversao = orcamentosTotal > 0 ? (orcamentosAprovados / orcamentosTotal) * 100 : 0;
+
+  const exportCSV = () => {
+    const payLabel: Record<string, string> = { dinheiro: "Dinheiro", pix: "Pix", cartao_credito: "Cartão Crédito", cartao_debito: "Cartão Débito", boleto: "Boleto", cheque: "Cheque" };
+    const header = ["OS", "Cliente", "Veículo", "Serviço", "Valor", "Status", "Pagamento", "Forma Pagamento", "Entrada"];
+    const rows = rawOrdens.map((o) => [
+      o.os_number ?? "", o.customer_name ?? "", o.vehicle_info ?? "", o.service_type ?? "",
+      String(o.total_value ?? 0), o.status ?? "", o.payment_status ?? "",
+      payLabel[o.payment_method ?? ""] ?? "", (o.entry_date ?? "").slice(0, 10),
+    ]);
+    const csv = [header, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `os_${dateFrom}_${dateTo}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return (
@@ -162,6 +196,27 @@ export default function RelatoriosPage() {
   return (
     <DashboardLayout title="Relatórios" subtitle="Acompanhe o desempenho da sua oficina">
       <div className="space-y-6">
+
+        {/* Filtros de período */}
+        <div className="flex flex-wrap items-center gap-3 p-4 bg-white rounded-xl border border-slate-200">
+          <span className="text-sm font-medium text-slate-700">Período:</span>
+          <div className="flex items-center gap-2">
+            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-8 text-sm w-36" />
+            <span className="text-slate-400 text-sm">até</span>
+            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-8 text-sm w-36" />
+          </div>
+          <div className="flex gap-2">
+            {[["Este mês", firstOfMonth, today], ["Este ano", `${now.getFullYear()}-01-01`, today], ["Tudo", "2020-01-01", today]].map(([label, from, to]) => (
+              <button key={label} onClick={() => { setDateFrom(from); setDateTo(to); }}
+                className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${dateFrom === from && dateTo === to ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-600 border-slate-200 hover:border-blue-400"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" className="gap-1 ml-auto" onClick={exportCSV} disabled={rawOrdens.length === 0}>
+            <Download className="w-3.5 h-3.5" />Exportar CSV
+          </Button>
+        </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

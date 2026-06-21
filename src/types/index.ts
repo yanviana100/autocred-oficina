@@ -75,16 +75,20 @@ export type ServiceOrderStatus =
   | "finalizado"
   | "entregue";
 
+export type PaymentStatus = "pendente" | "pago";
+export type PaymentMethod = "dinheiro" | "pix" | "cartao_credito" | "cartao_debito" | "boleto" | "cheque";
+
 export interface ServiceOrder {
   id: string;
   osNumber: string;
   workshopId: string;
-  quoteId: string;
+  quoteId?: string;
   customerId: string;
   customerName: string;
   vehicleId: string;
   vehicleInfo: string;
   serviceType: string;
+  problemDescription?: string;
   technicianName?: string;
   status: ServiceOrderStatus;
   entryDate: string;
@@ -92,7 +96,20 @@ export interface ServiceOrder {
   completedDate?: string;
   totalValue: number;
   notes?: string;
+  kmEntrada?: number;
+  kmSaida?: number;
+  paymentStatus: PaymentStatus;
+  paymentMethod?: PaymentMethod;
+  paidAt?: string;
+  isAvulsa?: boolean;
   createdAt: string;
+}
+
+export interface Technician {
+  id: string;
+  workshopId: string;
+  name: string;
+  phone?: string;
 }
 
 export interface QuoteItem {

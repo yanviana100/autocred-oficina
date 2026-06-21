@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, User, Phone, Mail, MapPin, X, Car, Pencil, Trash2, ChevronRight } from "lucide-react";
+import { Plus, Search, User, Phone, Mail, MapPin, X, Car, Pencil, Trash2, ChevronRight, AlertTriangle } from "lucide-react";
 import { useCustomers, useVehicles, useQuotes } from "@/hooks/useStore";
 import { useToast } from "@/components/ui/toast";
+import { getSupabase } from "@/lib/db";
 import { formatDate } from "@/lib/utils";
 import type { Customer } from "@/types";
 
@@ -70,6 +71,22 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<null | "new" | Customer>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [deleteBlocked, setDeleteBlocked] = useState<string | null>(null);
+
+  const handleDeleteClick = async (customerId: string) => {
+    const supabase = getSupabase();
+    const { data: openQuotes } = await supabase
+      .from("quotes")
+      .select("id")
+      .eq("customer_id", customerId)
+      .not("status", "in", '("concluido","recusado")')
+      .limit(1);
+    if (openQuotes && openQuotes.length > 0) {
+      setDeleteBlocked(customerId);
+    } else {
+      setConfirmDelete(customerId);
+    }
+  };
 
   const filtered = customers.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -86,6 +103,18 @@ export default function ClientesPage() {
   return (
     <DashboardLayout title="Clientes" subtitle={`${customers.length} clientes cadastrados`}>
       {modal !== null && <ClienteModal initial={modal === "new" ? undefined : (modal as Customer)} onSave={handleSave} onClose={() => setModal(null)} />}
+      {deleteBlocked && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold">Não é possível excluir</h3>
+            </div>
+            <p className="text-sm text-slate-500 mb-6">Este cliente possui orçamentos em aberto. Conclua ou recuse todos os orçamentos antes de excluí-lo.</p>
+            <Button className="w-full" onClick={() => setDeleteBlocked(null)}>Entendido</Button>
+          </div>
+        </div>
+      )}
       {confirmDelete && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
@@ -120,7 +149,7 @@ export default function ClientesPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => setModal(customer)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600"><Pencil className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setConfirmDelete(customer.id)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => handleDeleteClick(customer.id)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                   </div>
                 </div>
                 <div className="space-y-2 text-sm">

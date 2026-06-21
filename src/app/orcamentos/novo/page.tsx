@@ -67,6 +67,11 @@ export default function NovoOrcamentoPage() {
       toast("Preencha cliente, veículo, tipo de serviço e descrição.", "warning");
       return;
     }
+    const itemsInvalidos = items.filter((i) => !i.description.trim() || i.unitPrice <= 0);
+    if (itemsInvalidos.length > 0) {
+      toast("Todos os itens precisam ter descrição e valor maior que zero.", "warning");
+      return;
+    }
     if (total === 0) { toast("Adicione pelo menos um item com valor.", "warning"); return; }
 
     setSaving(true);

@@ -40,16 +40,22 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
   }
 
   const handleStatusChange = async (newStatus: QuoteStatus) => {
-    if (newStatus === "aprovado") {
-      const result = await approve(quote.id);
-      if (result) {
-        setQuote(result.quote);
-        toast(`Orçamento aprovado! OS ${result.serviceOrder.os_number} criada automaticamente.`);
+    try {
+      if (newStatus === "aprovado") {
+        const result = await approve(quote.id);
+        if (result) {
+          setQuote(result.quote);
+          toast(`Orçamento aprovado! OS ${result.serviceOrder.os_number} criada automaticamente.`);
+        } else {
+          toast("Erro ao aprovar orçamento. Tente novamente.", "warning");
+        }
+      } else {
+        await update(quote.id, { status: newStatus });
+        setQuote({ ...quote, status: newStatus });
+        toast("Status atualizado!");
       }
-    } else {
-      await update(quote.id, { status: newStatus });
-      setQuote({ ...quote, status: newStatus });
-      toast("Status atualizado!");
+    } catch {
+      toast("Erro inesperado. Tente novamente.", "warning");
     }
   };
 

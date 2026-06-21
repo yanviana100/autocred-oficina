@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, ArrowLeft, Save, CreditCard } from "lucide-react";
 import { useCustomers, useVehicles, useQuotes } from "@/hooks/useStore";
+import { getWorkshopId } from "@/lib/db";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
 
@@ -84,7 +85,7 @@ export default function NovoOrcamentoPage() {
     }));
 
     const newQuote = await createQuote({
-      workshopId: "w1",
+      workshopId: (await getWorkshopId()) ?? "",
       customerId: form.customerId,
       vehicleId:  form.vehicleId,
       customerName: customer?.name ?? "",

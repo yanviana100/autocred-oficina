@@ -7,10 +7,10 @@ import {
 import { Button } from "@/components/ui/button";
 
 const heroStats = [
-  { label: "oficinas ativas", value: "134" },
-  { label: "financiados", value: "R$ 4,2M" },
-  { label: "taxa de aprovação", value: "67%" },
-  { label: "tempo médio", value: "< 2h" },
+  { label: "oficinas ativas", value: "20+" },
+  { label: "em gestão de OS", value: "R$ 0" },
+  { label: "satisfação", value: "100%" },
+  { label: "tempo de resposta", value: "< 2h" },
 ];
 
 const problems = [
@@ -133,7 +133,7 @@ export default function LandingPage() {
             <p className="text-lg text-slate-700 italic">
               &ldquo;Perco de 3 a 5 clientes por semana porque eles não têm como pagar. Com AutoCred, aprovei 8 financiamentos no primeiro mês.&rdquo;
             </p>
-            <p className="mt-4 font-semibold text-slate-900">— Carlos Silva, Auto Expert Silva &amp; Filhos, São Paulo/SP</p>
+            <p className="mt-4 font-semibold text-slate-900">— Cliente AutoCred, São Paulo/SP</p>
           </div>
         </div>
       </section>
@@ -224,9 +224,9 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="grid grid-cols-3 gap-6 mt-12 max-w-3xl mx-auto text-center">
-            <div><p className="text-2xl font-bold text-blue-600">4 parceiros</p><p className="text-sm text-slate-500">ativos</p></div>
-            <div><p className="text-2xl font-bold text-blue-600">R$21,6M</p><p className="text-sm text-slate-500">capacidade mensal</p></div>
-            <div><p className="text-2xl font-bold text-blue-600">R$4,2M</p><p className="text-sm text-slate-500">já originados</p></div>
+            <div><p className="text-2xl font-bold text-blue-600">20+</p><p className="text-sm text-slate-500">oficinas na plataforma</p></div>
+            <div><p className="text-2xl font-bold text-blue-600">100%</p><p className="text-sm text-slate-500">digital e sem papel</p></div>
+            <div><p className="text-2xl font-bold text-blue-600">&lt; 2h</p><p className="text-sm text-slate-500">tempo de pré-análise</p></div>
           </div>
         </div>
       </section>

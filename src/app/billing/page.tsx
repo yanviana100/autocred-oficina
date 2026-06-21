@@ -84,7 +84,7 @@ export default function BillingPage() {
     : null;
 
   const whatsappMsg = encodeURIComponent("Olá! Quero fazer upgrade do meu plano no AutoCred. Pode me ajudar?");
-  const whatsappUrl = `https://wa.me/5511999999999?text=${whatsappMsg}`;
+  const whatsappUrl = `https://wa.me/5521999999999?text=${whatsappMsg}`;
 
   return (
     <DashboardLayout title="Planos e Cobrança" subtitle="Gerencie sua assinatura">

@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, DollarSign, Calendar, TrendingUp } from "lucide-react";
-import { mockFinancingRequests } from "@/data/mock";
 import { formatCurrency, formatDate, financingStatusLabel, financingStatusColor, riskLevelColor, riskLevelLabel } from "@/lib/utils";
+import { getSupabase, getWorkshopId } from "@/lib/db";
 import type { FinancingStatus, FinancingRequest } from "@/types";
 
 const COLUMNS: { id: FinancingStatus; color: string; headerColor: string }[] = [
@@ -18,7 +18,7 @@ const COLUMNS: { id: FinancingStatus; color: string; headerColor: string }[] = [
 
 function KanbanCard({ item }: { item: FinancingRequest }) {
   return (
-    <div className="kanban-card bg-white rounded-xl shadow-sm border border-slate-100 p-4 cursor-grab active:cursor-grabbing">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 cursor-grab active:cursor-grabbing">
       <div className="flex items-start gap-2 mb-3">
         <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
           <User className="w-4 h-4 text-blue-600" />
@@ -28,12 +28,9 @@ function KanbanCard({ item }: { item: FinancingRequest }) {
           <p className="text-xs text-slate-500 truncate">{item.serviceType}</p>
         </div>
       </div>
-
       <div className="space-y-1.5 mb-3">
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500 flex items-center gap-1">
-            <DollarSign className="w-3 h-3" /> Solicitado
-          </span>
+          <span className="text-slate-500 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Solicitado</span>
           <span className="font-bold text-slate-900">{formatCurrency(item.requestedAmount)}</span>
         </div>
         <div className="flex items-center justify-between text-xs">
@@ -41,35 +38,70 @@ function KanbanCard({ item }: { item: FinancingRequest }) {
           <span className="font-medium text-slate-700">{item.installments}x {formatCurrency(item.estimatedInstallment)}</span>
         </div>
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-500 flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> Data
-          </span>
+          <span className="text-slate-500 flex items-center gap-1"><Calendar className="w-3 h-3" /> Data</span>
           <span className="text-slate-600">{formatDate(item.createdAt)}</span>
         </div>
       </div>
-
-      <div className="flex items-center justify-between">
-        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${riskLevelColor[item.riskLevel]}`}>
-          {riskLevelLabel[item.riskLevel]}
-        </span>
-      </div>
+      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${riskLevelColor[item.riskLevel]}`}>
+        {riskLevelLabel[item.riskLevel]}
+      </span>
     </div>
   );
 }
 
 export default function PipelinePage() {
-  const [requests, setRequests] = useState(mockFinancingRequests);
+  const [requests, setRequests] = useState<FinancingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<FinancingStatus | null>(null);
 
-  const handleDragStart = (id: string) => setDragging(id);
-  const handleDragEnd = () => { setDragging(null); setDragOver(null); };
+  const load = useCallback(async () => {
+    const workshopId = await getWorkshopId();
+    if (!workshopId) return;
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from("financing_requests")
+      .select("*")
+      .eq("workshop_id", workshopId)
+      .order("created_at", { ascending: false });
+    if (data) {
+      setRequests(data.map((r) => ({
+        id: r.id,
+        workshopId: r.workshop_id,
+        customerId: r.customer_id ?? "",
+        quoteId: r.quote_id ?? "",
+        customerName: r.customer_name ?? "",
+        workshopName: "",
+        serviceType: r.service_type ?? "",
+        requestedAmount: r.requested_amount ?? 0,
+        installments: r.installments ?? 12,
+        estimatedInstallment: r.estimated_installment ?? 0,
+        status: r.status ?? "novo",
+        riskLevel: r.risk_level ?? "medio",
+        fullName: r.full_name ?? "",
+        cpf: r.cpf ?? "",
+        birthDate: r.birth_date ?? "",
+        monthlyIncome: r.monthly_income ?? 0,
+        profession: r.profession ?? "",
+        hasIncomeProof: r.has_income_proof ?? false,
+        hasCreditRestriction: r.has_credit_restriction ?? "nao",
+        termsAccepted: r.terms_accepted ?? false,
+        shopCommission: r.shop_commission,
+        autocredCommission: r.autocred_commission,
+        partnerName: r.partner_name,
+        createdAt: r.created_at?.split("T")[0] ?? "",
+      })));
+    }
+    setLoading(false);
+  }, []);
 
-  const handleDrop = (status: FinancingStatus) => {
+  useEffect(() => { load(); }, [load]);
+
+  const handleDrop = async (status: FinancingStatus) => {
     if (!dragging) return;
-    setRequests((prev) =>
-      prev.map((r) => (r.id === dragging ? { ...r, status } : r))
-    );
+    const supabase = getSupabase();
+    await supabase.from("financing_requests").update({ status }).eq("id", dragging);
+    setRequests((prev) => prev.map((r) => (r.id === dragging ? { ...r, status } : r)));
     setDragging(null);
     setDragOver(null);
   };
@@ -79,7 +111,6 @@ export default function PipelinePage() {
 
   return (
     <DashboardLayout title="Pipeline Financeiro" subtitle="Arraste os cards para mover entre etapas">
-      {/* Summary */}
       <div className="flex gap-4 mb-6 flex-wrap">
         <div className="bg-white rounded-lg border px-4 py-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -99,68 +130,61 @@ export default function PipelinePage() {
             <p className="font-bold text-slate-900">{formatCurrency(convertedValue)}</p>
           </div>
         </div>
-        <div className="bg-white rounded-lg border px-4 py-3 flex items-center gap-3">
-          <div>
-            <p className="text-xs text-slate-500">Total de leads</p>
-            <p className="font-bold text-slate-900">{requests.length}</p>
-          </div>
+        <div className="bg-white rounded-lg border px-4 py-3">
+          <p className="text-xs text-slate-500">Total de leads</p>
+          <p className="font-bold text-slate-900">{requests.length}</p>
         </div>
       </div>
 
-      {/* Kanban board */}
-      <div className="overflow-x-auto pb-4">
-        <div className="flex gap-4 min-w-max">
-          {COLUMNS.map((col) => {
-            const colItems = requests.filter((r) => r.status === col.id);
-            const colTotal = colItems.reduce((acc, r) => acc + r.requestedAmount, 0);
-
-            return (
-              <div
-                key={col.id}
-                className={`w-72 rounded-xl ${col.color} transition-all ${dragOver === col.id ? "ring-2 ring-blue-400" : ""}`}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(col.id); }}
-                onDrop={() => handleDrop(col.id)}
-                onDragLeave={() => setDragOver(null)}
-              >
-                {/* Column header */}
-                <div className={`rounded-t-xl px-4 py-3 ${col.headerColor}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{financingStatusLabel[col.id]}</span>
-                      <span className="w-5 h-5 rounded-full bg-white/50 flex items-center justify-center text-xs font-bold">
-                        {colItems.length}
-                      </span>
+      {loading ? (
+        <div className="flex items-center justify-center py-24 text-slate-400 text-sm">Carregando pipeline...</div>
+      ) : (
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 min-w-max">
+            {COLUMNS.map((col) => {
+              const colItems = requests.filter((r) => r.status === col.id);
+              const colTotal = colItems.reduce((acc, r) => acc + r.requestedAmount, 0);
+              return (
+                <div
+                  key={col.id}
+                  className={`w-72 rounded-xl ${col.color} transition-all ${dragOver === col.id ? "ring-2 ring-blue-400" : ""}`}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(col.id); }}
+                  onDrop={() => handleDrop(col.id)}
+                  onDragLeave={() => setDragOver(null)}
+                >
+                  <div className={`rounded-t-xl px-4 py-3 ${col.headerColor}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-sm">{financingStatusLabel[col.id]}</span>
+                        <span className="w-5 h-5 rounded-full bg-white/50 flex items-center justify-center text-xs font-bold">{colItems.length}</span>
+                      </div>
+                      {colTotal > 0 && <span className="text-xs font-medium opacity-80">{formatCurrency(colTotal)}</span>}
                     </div>
-                    {colTotal > 0 && (
-                      <span className="text-xs font-medium opacity-80">{formatCurrency(colTotal)}</span>
+                  </div>
+                  <div className="p-3 space-y-3 min-h-48">
+                    {colItems.map((item) => (
+                      <div
+                        key={item.id}
+                        draggable
+                        onDragStart={() => setDragging(item.id)}
+                        onDragEnd={() => { setDragging(null); setDragOver(null); }}
+                        className={`transition-opacity ${dragging === item.id ? "opacity-50" : ""}`}
+                      >
+                        <KanbanCard item={item} />
+                      </div>
+                    ))}
+                    {colItems.length === 0 && (
+                      <div className="flex items-center justify-center h-24 text-xs text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
+                        Arraste cards aqui
+                      </div>
                     )}
                   </div>
                 </div>
-
-                {/* Cards */}
-                <div className="p-3 space-y-3 min-h-48">
-                  {colItems.map((item) => (
-                    <div
-                      key={item.id}
-                      draggable
-                      onDragStart={() => handleDragStart(item.id)}
-                      onDragEnd={handleDragEnd}
-                      className={`transition-opacity ${dragging === item.id ? "opacity-50" : ""}`}
-                    >
-                      <KanbanCard item={item} />
-                    </div>
-                  ))}
-                  {colItems.length === 0 && (
-                    <div className="flex items-center justify-center h-24 text-xs text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
-                      Arraste cards aqui
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </DashboardLayout>
   );
 }

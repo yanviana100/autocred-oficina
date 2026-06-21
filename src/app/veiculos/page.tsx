@@ -24,7 +24,7 @@ function VeiculoModal({ initial, customers, onSave, onClose }: {
   const [form, setForm] = useState({ ...emptyForm, ...initial, year: String(initial?.year ?? ""), mileage: String(initial?.mileage ?? "") });
   const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
   const isEdit = !!initial?.id;
-  const years = Array.from({ length: 35 }, (_, i) => String(2024 - i));
+  const years = Array.from({ length: 37 }, (_, i) => String(new Date().getFullYear() + 1 - i));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

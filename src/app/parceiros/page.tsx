@@ -2,119 +2,134 @@
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { mockPartners } from "@/data/mock";
-import { formatCurrencyShort } from "@/lib/utils";
-import { CheckCircle, Clock } from "lucide-react";
-
-const typeBadge: Record<string, string> = {
-  banco: "bg-blue-100 text-blue-700",
-  fintech: "bg-green-100 text-green-700",
-  cooperativa: "bg-orange-100 text-orange-700",
-};
-
-const typeLabel: Record<string, string> = {
-  banco: "Banco",
-  fintech: "Fintech",
-  cooperativa: "Cooperativa",
-};
+import { CheckCircle, Clock, MessageCircle, TrendingUp } from "lucide-react";
 
 const partnershipSteps = [
-  "Oficina registra solicitação no AutoCred",
-  "AutoCred faz triagem e envia ao parceiro ideal",
-  "Parceiro analisa e decide em horas",
-  "Aprovação notificada, oficina autoriza reparo, recebe integral",
+  "Oficina registra a solicitação de crédito no AutoCred",
+  "AutoCred faz triagem automática de risco do cliente",
+  "Lead qualificado é enviado ao parceiro financeiro",
+  "Parceiro analisa e decide em até 2 horas",
+  "Aprovação notificada — oficina autoriza reparo e recebe integral",
+];
+
+const tiposCredito = [
+  { tipo: "Crédito pessoal", taxa: "1,79% – 2,89% a.m.", prazo: "até 24x", desc: "Sem garantia, aprovação mais rápida" },
+  { tipo: "CDC (Crédito Direto ao Consumidor)", taxa: "1,49% – 2,19% a.m.", prazo: "até 36x", desc: "Vinculado ao serviço, taxa menor" },
+  { tipo: "Crédito com garantia de veículo", taxa: "0,99% – 1,79% a.m.", prazo: "até 48x", desc: "Menor taxa, exige alienação" },
 ];
 
 export default function ParceirosPage() {
+  const whatsappUrl = `https://wa.me/5521999999999?text=${encodeURIComponent("Olá! Quero saber mais sobre os parceiros financeiros do AutoCred.")}`;
+
   return (
     <DashboardLayout title="Rede de Parceiros" subtitle="Instituições financeiras conectadas à plataforma AutoCred">
-      {/* SUMMARY */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold">4</p><p className="text-sm text-slate-500">parceiros ativos</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold">R$21,6M</p><p className="text-sm text-slate-500">capacidade/mês</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold">3 tipos</p><p className="text-sm text-slate-500">banco, fintech, cooperativa</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-2xl font-bold">67%</p><p className="text-sm text-slate-500">aprovação média</p></CardContent></Card>
-      </div>
 
-      {/* PARTNERS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
-        {mockPartners.map((p) => (
-          <Card key={p.id} className="card-hover">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">{p.logo}</div>
+      <div className="max-w-4xl space-y-6">
+
+        {/* Status da rede */}
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3">
+              <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold text-blue-900">Rede em expansão</p>
+                <p className="text-sm text-blue-700 mt-1">
+                  Estamos fechando parcerias com instituições financeiras para oferecer crédito automotivo às oficinas da plataforma.
+                  Em breve as opções de parceiros estarão disponíveis diretamente aqui.
+                </p>
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                  <Button size="sm" className="mt-3 gap-2 bg-blue-600 hover:bg-blue-700">
+                    <MessageCircle className="w-4 h-4" /> Quero saber mais
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Como funciona */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Como funciona a rede de crédito</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {partnershipSteps.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                    {i + 1}
+                  </div>
+                  <p className="text-sm text-slate-700">{step}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tipos de crédito */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Tipos de crédito disponíveis</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tiposCredito.map((t) => (
+              <div key={t.tipo} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex items-start justify-between flex-wrap gap-2">
                   <div>
-                    <h3 className="font-semibold text-slate-900">{p.name}</h3>
-                    <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${typeBadge[p.type]}`}>
-                      {typeLabel[p.type]}
-                    </span>
+                    <p className="font-semibold text-slate-900 text-sm">{t.tipo}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t.desc}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-blue-600">{t.taxa}</p>
+                    <p className="text-xs text-slate-400">{t.prazo}</p>
                   </div>
                 </div>
-                <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${p.active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
-                  {p.active ? "Ativo" : "Inativo"}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 mt-4 text-center">
-                <div><p className="text-xs text-slate-500">Taxa média</p><p className="font-semibold text-sm">{p.avgRate.toFixed(2)}%</p></div>
-                <div><p className="text-xs text-slate-500">Aprovação</p><p className="font-semibold text-sm">{p.approvalRate}%</p></div>
-                <div><p className="text-xs text-slate-500">Capacidade</p><p className="font-semibold text-sm">{formatCurrencyShort(p.monthlyCapacity)}</p></div>
-                <div><p className="text-xs text-slate-500">Prazo máx</p><p className="font-semibold text-sm">{p.maxInstallments}x</p></div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                {p.products.map((prod) => (
-                  <div key={prod.name} className="bg-slate-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm">{prod.name}</p>
-                      {prod.requiresProof && (
-                        <span className="text-xs bg-amber-100 text-amber-700 rounded-full px-2 py-0.5">Exige comprovante</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
-                      <span>{prod.minRate.toFixed(2)}% – {prod.maxRate.toFixed(2)}% a.m.</span>
-                      <span>até {prod.maxInstallments}x</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {prod.turnaroundHours}h</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button className="w-full mt-4" disabled={!p.active}>
-                Solicitar via este parceiro
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* HOW PARTNERSHIP WORKS */}
-      <Card className="mt-6">
-        <CardHeader className="pb-2"><CardTitle className="text-base">Como funciona a parceria</CardTitle></CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {partnershipSteps.map((s, i) => (
-              <div key={i} className="rounded-lg border border-slate-200 p-4">
-                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">{i + 1}</div>
-                <p className="text-sm text-slate-700 mt-3">{s}</p>
               </div>
             ))}
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* CTA */}
-      <div className="mt-6 rounded-xl p-8 fintech-gradient text-white flex flex-col md:flex-row items-center justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-bold">Quer distribuir crédito via AutoCred?</h3>
-          <p className="text-slate-300 mt-1 max-w-xl">
-            Conecte sua instituição a uma rede de oficinas com demanda qualificada e clientes pré-triados. Zero CAC, integração digital.
-          </p>
-        </div>
-        <Button className="bg-white text-slate-900 hover:bg-slate-100 flex items-center gap-2">
-          <CheckCircle className="w-4 h-4" /> Seja um parceiro
-        </Button>
+        {/* Vantagens */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Vantagens para a sua oficina</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {[
+              "Comissão de 4% sobre cada financiamento aprovado",
+              "Zero risco de inadimplência — o risco fica com o parceiro",
+              "Cliente paga parcelado, oficina recebe integral",
+              "Triagem automática de risco em menos de 1 minuto",
+              "Sem burocracia — tudo digital pelo AutoCred",
+            ].map((v) => (
+              <div key={v} className="flex items-center gap-2 text-sm text-slate-700">
+                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                {v}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* CTA */}
+        <Card className="bg-slate-900 border-0 text-white">
+          <CardContent className="p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="font-bold">Quer usar o crédito agora?</p>
+              <p className="text-sm text-slate-300 mt-1">Crie um orçamento e use o simulador para mostrar ao cliente.</p>
+            </div>
+            <div className="flex gap-2">
+              <a href="/simulador">
+                <Button variant="outline" className="border-slate-600 text-white hover:bg-slate-800 bg-transparent">
+                  <Clock className="w-4 h-4 mr-2" /> Simulador
+                </Button>
+              </a>
+              <a href="/financiamento">
+                <Button className="bg-blue-600 hover:bg-blue-500">Nova pré-análise</Button>
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
       </div>
     </DashboardLayout>
   );

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useFinancingRequests } from "@/hooks/useStore";
 import { formatCurrency, formatDate, financingStatusLabel, financingStatusColor, riskLevelLabel, riskLevelColor, calcRiskLevel } from "@/lib/utils";
+import { getSupabase, getWorkshopId } from "@/lib/db";
 import type { RiskLevel } from "@/types";
 
 type FormState = {
@@ -49,6 +50,18 @@ export default function FinanciamentoPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [result, setResult] = useState<RiskLevel | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [workshopName, setWorkshopName] = useState("Minha Oficina");
+
+  useEffect(() => {
+    async function load() {
+      const workshopId = await getWorkshopId();
+      if (!workshopId) return;
+      const supabase = getSupabase();
+      const { data } = await supabase.from("workshops").select("name").eq("id", workshopId).single();
+      if (data?.name) setWorkshopName(data.name);
+    }
+    load();
+  }, []);
 
   const update = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -65,11 +78,11 @@ export default function FinanciamentoPage() {
     const amt = Number(form.requestedAmount);
     const inst = Number(form.installments);
     createRequest({
-      workshopId: "w1",
+      workshopId: (await getWorkshopId()) ?? "",
       customerId: "",
       quoteId: "",
       customerName: form.fullName,
-      workshopName: "Auto Expert Silva & Filhos",
+      workshopName,
       serviceType: "Serviço de oficina",
       requestedAmount: amt,
       installments: inst,

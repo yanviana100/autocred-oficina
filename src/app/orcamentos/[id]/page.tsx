@@ -23,7 +23,8 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     get(id).then((q) => { setQuote(q); setLoadingQuote(false); });
-  }, [id, get]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   if (loadingQuote) {
     return <DashboardLayout title="Carregando..." subtitle=""><div className="animate-pulse h-4 bg-slate-200 rounded w-48" /></DashboardLayout>;

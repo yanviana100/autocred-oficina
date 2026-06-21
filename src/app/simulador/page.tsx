@@ -7,8 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mockPartners } from "@/data/mock";
 import { formatCurrency, calculateInstallment, calculateCommissions } from "@/lib/utils";
+
+const parceiros = [
+  { id: "creditas", label: "Creditas Auto" },
+  { id: "inter", label: "Banco Inter" },
+  { id: "santander", label: "Santander" },
+  { id: "bv", label: "BV Financeira" },
+  { id: "sicoob", label: "Sicoob" },
+];
 
 const rateOptions = [
   { value: "0.0149", label: "1,49% a.m. — Creditas Auto" },
@@ -26,7 +33,7 @@ export default function SimuladorPage() {
   const [downPayment, setDownPayment] = useState(0);
   const [installments, setInstallments] = useState(12);
   const [monthlyRate, setMonthlyRate] = useState(0.0199);
-  const [selectedPartner, setSelectedPartner] = useState("p1");
+  const [selectedPartner, setSelectedPartner] = useState("creditas");
 
   const amount = Math.max(0, repairValue - downPayment);
   const { installmentValue, totalCost, totalInterest } = calculateInstallment(repairValue, downPayment, installments, monthlyRate);
@@ -105,7 +112,7 @@ export default function SimuladorPage() {
               <Select value={selectedPartner} onValueChange={setSelectedPartner}>
                 <SelectTrigger className="mt-2"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {mockPartners.map((p) => <SelectItem key={p.id} value={p.id}>{p.logo} {p.name}</SelectItem>)}
+                  {parceiros.map((p) => <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

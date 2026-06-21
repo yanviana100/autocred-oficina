@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Eye, Share2, CheckCircle } from "lucide-react";
+import { Plus, Search, Eye, Share2, CheckCircle, Printer } from "lucide-react";
 import { useQuotes } from "@/hooks/useStore";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
@@ -122,6 +122,11 @@ export default function OrcamentosPage() {
                         <Link href={`/orcamentos/${q.id}`}>
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver orçamento">
                             <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        </Link>
+                        <Link href={`/orcamentos/${q.id}/imprimir`} target="_blank">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Imprimir / PDF">
+                            <Printer className="w-3.5 h-3.5" />
                           </Button>
                         </Link>
                         <Link href={`/orcamento/publico?token=${q.publicToken}`} target="_blank">

@@ -6,7 +6,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy } from "lucide-react";
+import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy, Printer } from "lucide-react";
 import { useQuotes } from "@/hooks/useStore";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
@@ -179,6 +179,11 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
 
           {/* Ações */}
           <div className="space-y-2">
+            <Link href={`/orcamentos/${quote.id}/imprimir`} target="_blank">
+              <Button className="w-full gap-2 bg-slate-800 hover:bg-slate-700">
+                <Printer className="w-4 h-4" />Imprimir / Salvar PDF
+              </Button>
+            </Link>
             <Button variant="outline" className="w-full gap-2" onClick={handleCopyLink}>
               <Copy className="w-4 h-4" />Copiar link do cliente
             </Button>

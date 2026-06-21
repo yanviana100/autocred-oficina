@@ -27,9 +27,10 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setError("E-mail ou senha incorretos."); setLoading(false); return; }
-    router.push("/dashboard");
+    const { data: workshop } = await supabase.from("workshops").select("onboarding_completed").eq("id", data.user!.id).single();
+    router.push(workshop?.onboarding_completed ? "/dashboard" : "/onboarding");
   };
 
   const handleReset = async (e: React.FormEvent) => {

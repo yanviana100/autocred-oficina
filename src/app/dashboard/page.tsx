@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   CheckCircle, DollarSign, TrendingUp, Zap,
-  Users, Car, FileText, ClipboardList, ArrowRight,
+  Users, Car, FileText, ClipboardList, ArrowRight, UserX, MessageCircle,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,12 +92,73 @@ function ChecklistItem({ done, label, href }: { done: boolean; label: string; hr
   );
 }
 
+interface InactiveCustomer {
+  id: string;
+  name: string;
+  phone: string;
+  last_os: string;
+}
+
+function InactiveCustomersCard({ customers }: { customers: InactiveCustomer[] }) {
+  if (customers.length === 0) return null;
+  const preview = customers.slice(0, 3);
+  const rest = customers.length - 3;
+
+  return (
+    <Card className="border-amber-200 bg-amber-50">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+              <UserX className="w-4 h-4 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">
+                {customers.length} cliente{customers.length > 1 ? "s" : ""} sem retorno há 60+ dias
+              </p>
+              <p className="text-xs text-amber-600">Entre em contato e recupere essa receita</p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {preview.map((c) => {
+            const msg = encodeURIComponent(`Olá ${c.name.split(" ")[0]}! Tudo bem? Faz um tempo que não te vemos aqui na oficina. Seu carro está precisando de revisão? Estamos à disposição! 😊`);
+            const phone = c.phone?.replace(/\D/g, "");
+            const waUrl = phone ? `https://wa.me/55${phone}?text=${msg}` : null;
+            return (
+              <div key={c.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-amber-100">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{c.name}</p>
+                  <p className="text-xs text-slate-400">Última OS: {new Date(c.last_os).toLocaleDateString("pt-BR")}</p>
+                </div>
+                {waUrl ? (
+                  <a href={waUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg transition-colors">
+                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                  </a>
+                ) : (
+                  <Link href={`/clientes/${c.id}`}
+                    className="text-xs text-blue-600 hover:underline font-medium">Ver cliente</Link>
+                )}
+              </div>
+            );
+          })}
+          {rest > 0 && (
+            <p className="text-xs text-amber-600 text-center pt-1">+{rest} outros clientes inativos</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function DashboardPage() {
   const metrics = useDashboardMetrics();
   const { quotes } = useQuotes();
   const { orders } = useServiceOrders();
   const [plan, setPlan] = useState("starter");
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+  const [inactiveCustomers, setInactiveCustomers] = useState<InactiveCustomer[]>([]);
 
   useEffect(() => {
     async function loadPlan() {
@@ -113,7 +174,56 @@ export default function DashboardPage() {
         }
       }
     }
+
+    async function loadInactive() {
+      const workshopId = await getWorkshopId();
+      if (!workshopId) return;
+      const supabase = getSupabase();
+      const cutoff = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
+      // Busca OS agrupadas por customer — pega o último por cliente
+      const { data: osData } = await supabase
+        .from("service_orders")
+        .select("customer_id, created_at")
+        .eq("workshop_id", workshopId)
+        .order("created_at", { ascending: false });
+
+      if (!osData) return;
+
+      // Última OS por cliente
+      const lastOsByCustomer: Record<string, string> = {};
+      for (const row of osData) {
+        if (!lastOsByCustomer[row.customer_id]) {
+          lastOsByCustomer[row.customer_id] = row.created_at;
+        }
+      }
+
+      // Filtra clientes sem OS nos últimos 60 dias
+      const inactiveIds = Object.entries(lastOsByCustomer)
+        .filter(([, date]) => date < cutoff)
+        .map(([id]) => id)
+        .slice(0, 10);
+
+      if (inactiveIds.length === 0) return;
+
+      const { data: customers } = await supabase
+        .from("customers")
+        .select("id, name, phone")
+        .in("id", inactiveIds);
+
+      if (!customers) return;
+
+      setInactiveCustomers(
+        customers.map((c) => ({
+          id: c.id,
+          name: c.name,
+          phone: c.phone,
+          last_os: lastOsByCustomer[c.id],
+        })).sort((a, b) => a.last_os.localeCompare(b.last_os))
+      );
+    }
+
     loadPlan();
+    loadInactive();
   }, []);
 
   const recentQuotes = [...quotes]
@@ -147,6 +257,13 @@ export default function DashboardPage() {
           <Link href="/billing">
             <Button size="sm" className="bg-blue-600 hover:bg-blue-500 text-white text-xs">Ver planos</Button>
           </Link>
+        </div>
+      )}
+
+      {/* Clientes inativos */}
+      {inactiveCustomers.length > 0 && (
+        <div className="mb-4">
+          <InactiveCustomersCard customers={inactiveCustomers} />
         </div>
       )}
 

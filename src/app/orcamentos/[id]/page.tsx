@@ -2,6 +2,7 @@
 import { use } from "react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ const serviceTypes = ["Motor","Câmbio","Suspensão","Freios","Elétrica","Ar-co
 
 export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const { get, update, approve } = useQuotes();
   const { toast } = useToast();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -96,8 +98,8 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
       if (newStatus === "aprovado") {
         const result = await approve(quote.id);
         if (result) {
-          setQuote(result.quote);
-          toast(`Orçamento aprovado! OS ${result.serviceOrder.os_number} criada automaticamente.`);
+          toast(`Orçamento aprovado! OS ${result.serviceOrder.os_number} criada.`);
+          router.push(`/ordens/${result.serviceOrder.id}`);
         } else {
           toast("Erro ao aprovar orçamento. Tente novamente.", "warning");
         }

@@ -1,303 +1,312 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import {
-  CreditCard, AlertTriangle, TrendingDown, Clock, TrendingUp, DollarSign,
-  Shield, Zap, Users, BarChart2, CheckCircle, ArrowRight, Quote as QuoteIcon,
+  ClipboardList, DollarSign, BarChart2, Car, FileText, Users,
+  CheckCircle, ArrowRight, Menu, X, Wrench, Clock, TrendingUp,
+  Shield, Zap, ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-const heroStats = [
-  { label: "oficinas ativas", value: "20+" },
-  { label: "em gestão de OS", value: "R$ 0" },
-  { label: "satisfação", value: "100%" },
-  { label: "tempo de resposta", value: "< 2h" },
+const NAV_LINKS = [
+  { label: "Funcionalidades", href: "#funcionalidades" },
+  { label: "Como funciona", href: "#como-funciona" },
+  { label: "Depoimentos", href: "#depoimentos" },
 ];
 
-const problems = [
-  { icon: AlertTriangle, num: "38%", desc: "dos clientes abandonam o reparo por não conseguir pagar à vista" },
-  { icon: TrendingDown, num: "R$ 33 bilhões", desc: "em reparos são perdidos anualmente no Brasil por falta de crédito" },
-  { icon: Clock, num: "550 mil", desc: "oficinas mecânicas sem acesso a uma solução de financiamento integrada" },
+const PROBLEMS = [
+  { icon: ClipboardList, title: "OS perdida em papel", desc: "Ordem de serviço anotada no caderno some, cliente liga cobrando e você não sabe onde está o carro." },
+  { icon: DollarSign, title: "Dinheiro que some", desc: "Serviço feito, peça comprada, mas no fim do mês não sabe quanto entrou, quanto saiu e quanto ainda vai receber." },
+  { icon: Clock, title: "Tempo jogado fora", desc: "Horas perdidas buscando histórico de cliente, refazendo orçamento, ligando para saber se pagou ou não pagou." },
 ];
 
-const steps = [
-  { n: 1, title: "Crie o orçamento", desc: "Oficina lança o orçamento no AutoCred com peças e mão de obra" },
-  { n: 2, title: "Cliente solicita crédito", desc: "Cliente preenche pré-análise em 2 minutos direto no link do orçamento" },
-  { n: 3, title: "Aprovação e pagamento", desc: "Parceiro financeiro aprova. Oficina recebe integral. Cliente paga parcelado." },
+const FEATURES = [
+  { icon: ClipboardList, title: "Ordens de Serviço", desc: "Crie, acompanhe e finalize OS em segundos. KM de entrada e saída, técnico responsável, status em tempo real." },
+  { icon: FileText, title: "Orçamentos Profissionais", desc: "Gere orçamentos com logo da sua oficina em PDF. Cliente aprova, vira OS automaticamente." },
+  { icon: DollarSign, title: "Controle de Pagamento", desc: "Dinheiro, Pix, cartão, boleto — registre tudo. Veja o que foi pago e o que está em aberto." },
+  { icon: Car, title: "Histórico do Veículo", desc: "Todo serviço feito no carro registrado. Quando o cliente voltar, você já sabe tudo que aconteceu antes." },
+  { icon: BarChart2, title: "Relatórios", desc: "Faturamento, ticket médio, serviços mais realizados, melhores clientes. Tudo em um painel." },
+  { icon: Users, title: "Gestão de Clientes", desc: "Cadastro completo com múltiplos veículos por cliente. Nunca perde um dado, nunca cria duplicata." },
 ];
 
-const benefits = [
-  { icon: TrendingUp, title: "Aumento de 40% no ticket médio", desc: "Clientes aprovam reparos maiores quando podem parcelar" },
-  { icon: DollarSign, title: "Comissão de 4% sobre cada financiamento", desc: "Renda extra além do valor do serviço" },
-  { icon: Shield, title: "Zero risco de inadimplência", desc: "O risco fica 100% com o parceiro financeiro" },
-  { icon: Zap, title: "Aprovação em menos de 2 horas", desc: "Não perca o cliente por demora no processo" },
-  { icon: Users, title: "Fidelização do cliente", desc: "Clientes financiados têm 3x mais chance de retornar" },
-  { icon: BarChart2, title: "Dashboard completo", desc: "Acompanhe volume, comissões e aprovações em tempo real" },
+const STEPS = [
+  { n: "01", title: "Agende uma demo", desc: "Você fala com a gente pelo WhatsApp. Mostramos o sistema ao vivo em 20 minutos." },
+  { n: "02", title: "Configuramos para você", desc: "Em menos de 1 hora sua oficina já está no sistema com os primeiros dados cadastrados." },
+  { n: "03", title: "Comece a usar", desc: "Crie sua primeira OS no mesmo dia. Sua equipe aprende em minutos — sem treinamento longo." },
 ];
 
-const plans = [
-  {
-    name: "Starter", price: "R$150", highlight: false,
-    features: ["30 orçamentos/mês", "1 usuário", "Simulador básico", "Relatórios básicos", "Suporte por email"],
-  },
-  {
-    name: "Pro", price: "R$250", highlight: true,
-    features: ["Orçamentos ilimitados", "3 usuários", "Pipeline completo", "Link público", "Relatórios avançados", "Suporte prioritário"],
-  },
-  {
-    name: "Premium", price: "R$399", highlight: false,
-    features: ["Tudo do Pro", "Usuários ilimitados", "Relatórios completos", "NF-e integrado", "Gerente dedicado"],
-  },
+const TESTIMONIALS = [
+  { name: "Carlos M.", role: "Dono · Auto Center Silva", text: "Antes eu não sabia quanto dinheiro minha oficina ganhava no mês. Hoje abro o relatório e vejo tudo na hora." },
+  { name: "Roberto A.", role: "Gerente · Oficina Rápida", text: "O cliente chegou reclamando de um problema que a gente já tinha resolvido há 3 meses. Abri o histórico e mostrei na hora. Nunca mais tive esse problema." },
+  { name: "Marcos P.", role: "Proprietário · MecaFix", text: "Minha equipe adotou em dois dias. O orçamento em PDF impressionou os clientes — parece empresa grande." },
+];
+
+const CHECKLIST = [
+  "Ordens de serviço ilimitadas",
+  "Orçamentos em PDF profissional",
+  "Controle de pagamento completo",
+  "Histórico de veículos",
+  "Relatórios financeiros",
+  "Gestão de clientes e veículos",
+  "Cadastro de técnicos",
+  "Suporte via WhatsApp",
 ];
 
 export default function LandingPage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const WHATSAPP = "5511999999999"; // substituir pelo número real
+  const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent("Olá! Quero agendar uma demo do OficinaPro.")}`;
+
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      {/* HERO */}
-      <section style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)" }} className="text-white">
-        <nav className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div className="min-h-screen bg-white text-slate-900 font-sans">
+
+      {/* NAV */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-600">
-              <CreditCard className="w-5 h-5" />
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Wrench className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-lg">AutoCred</span>
+            <span className="font-bold text-lg text-slate-900">OficinaPro</span>
           </div>
-          <div className="hidden md:flex items-center gap-8 text-sm text-slate-200">
-            <a href="#como-funciona" className="hover:text-white">Como funciona</a>
-            <a href="#precos" className="hover:text-white">Preços</a>
-            <a href="#parceiros" className="hover:text-white">Para parceiros</a>
+          <div className="hidden md:flex items-center gap-8">
+            {NAV_LINKS.map((l) => (
+              <a key={l.label} href={l.href} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{l.label}</a>
+            ))}
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/auth/login">
-              <Button variant="ghost" className="text-white hover:bg-white/10">Entrar</Button>
-            </Link>
-            <Link href="/auth/cadastro">
-              <Button className="bg-blue-600 hover:bg-blue-500">Começar grátis</Button>
-            </Link>
+          <div className="hidden md:flex items-center gap-3">
+            <Link href="/auth/login" className="text-sm text-slate-600 hover:text-slate-900">Entrar</Link>
+            <a href={waUrl} target="_blank" rel="noopener noreferrer" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+              Agendar demo
+            </a>
           </div>
-        </nav>
+          <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+        {menuOpen && (
+          <div className="md:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-3">
+            {NAV_LINKS.map((l) => (
+              <a key={l.label} href={l.href} className="block text-sm text-slate-600 py-1" onClick={() => setMenuOpen(false)}>{l.label}</a>
+            ))}
+            <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg text-center mt-2">
+              Agendar demo gratuita
+            </a>
+          </div>
+        )}
+      </nav>
 
-        <div className="max-w-4xl mx-auto px-6 pt-16 pb-12 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-            Transforme reparos perdidos em receita garantida
+      {/* HERO */}
+      <section className="pt-32 pb-20 px-4 bg-gradient-to-b from-slate-950 to-slate-900">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-6">
+            <Zap className="w-3.5 h-3.5 text-blue-400" />
+            <span className="text-blue-400 text-sm font-medium">Sistema completo para oficinas mecânicas</span>
+          </div>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
+            Sua oficina organizada.<br />
+            <span className="text-blue-400">Seu dinheiro no controle.</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-3xl mx-auto">
-            A plataforma de crédito automotivo que conecta oficinas mecânicas a financiadores parceiros.
-            Seu cliente aprova o crédito em minutos. Você recebe o pagamento integral.
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            OficinaPro é o sistema de gestão para oficinas mecânicas que funciona de verdade. OS, orçamentos, pagamentos e relatórios — tudo em um lugar só.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/cadastro">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-500 gap-2 w-full sm:w-auto">
-                Começar gratuitamente <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button size="lg" variant="outline" className="border-white/40 text-white hover:bg-white/10 bg-transparent w-full sm:w-auto">
-                Ver demonstração
-              </Button>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-xl text-base transition-all hover:scale-105 shadow-lg shadow-blue-600/30"
+            >
+              Agendar demo gratuita <ArrowRight className="w-5 h-5" />
+            </a>
+            <Link
+              href="/auth/login"
+              className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-8 py-4 rounded-xl text-base transition-colors border border-white/10"
+            >
+              Já tenho conta
             </Link>
           </div>
+          <p className="text-slate-500 text-sm mt-5">Demo gratuita · Sem cartão de crédito · Configuração em 1 hora</p>
         </div>
 
-        <div className="max-w-5xl mx-auto px-6 pb-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/10 pt-8">
-            {heroStats.map((s) => (
-              <div key={s.label} className="text-center">
-                <p className="text-2xl md:text-3xl font-bold text-blue-300">{s.value}</p>
-                <p className="text-sm text-slate-300">{s.label}</p>
-              </div>
-            ))}
-          </div>
+        {/* Stats */}
+        <div className="max-w-3xl mx-auto mt-16 grid grid-cols-3 gap-4">
+          {[
+            { value: "20+", label: "oficinas ativas" },
+            { value: "100%", label: "satisfação dos clientes" },
+            { value: "< 1h", label: "para começar a usar" },
+          ].map((s) => (
+            <div key={s.label} className="text-center">
+              <p className="text-2xl sm:text-3xl font-bold text-white">{s.value}</p>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">{s.label}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* PROBLEM */}
-      <section className="bg-white py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center">O problema que custa bilhões às oficinas</h2>
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            {problems.map((p) => {
-              const Icon = p.icon;
-              return (
-                <div key={p.num} className="rounded-2xl border border-slate-200 p-8 card-hover">
-                  <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-4">
-                    <Icon className="w-6 h-6 text-red-500" />
-                  </div>
-                  <p className="text-3xl font-bold text-slate-900">{p.num}</p>
-                  <p className="text-slate-600 mt-2">{p.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-12 max-w-3xl mx-auto bg-slate-50 border-l-4 border-blue-600 rounded-r-xl p-8">
-            <QuoteIcon className="w-8 h-8 text-blue-600 mb-3" />
-            <p className="text-lg text-slate-700 italic">
-              &ldquo;Perco de 3 a 5 clientes por semana porque eles não têm como pagar. Com AutoCred, aprovei 8 financiamentos no primeiro mês.&rdquo;
+      {/* PROBLEMA */}
+      <section className="py-20 px-4 bg-slate-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Sua oficina está perdendo dinheiro todo dia
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              Não por falta de serviço — por falta de controle.
             </p>
-            <p className="mt-4 font-semibold text-slate-900">— Cliente AutoCred, São Paulo/SP</p>
           </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="como-funciona" className="bg-slate-50 py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center">Como funciona</h2>
-          <div className="grid md:grid-cols-3 gap-8 mt-12">
-            {steps.map((s) => (
-              <div key={s.n} className="text-center">
-                <div className="w-14 h-14 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl font-bold mx-auto">
-                  {s.n}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {PROBLEMS.map((p) => (
+              <div key={p.title} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center mb-4">
+                  <p.icon className="w-5 h-5 text-red-500" />
                 </div>
-                <h3 className="text-xl font-semibold mt-5">{s.title}</h3>
-                <p className="text-slate-600 mt-2">{s.desc}</p>
+                <h3 className="font-bold text-slate-900 mb-2">{p.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{p.desc}</p>
               </div>
             ))}
           </div>
-          <p className="text-center mt-12 text-lg font-medium text-blue-700">
-            Você não assume risco de crédito. O risco fica com o parceiro financeiro.
-          </p>
         </div>
       </section>
 
-      {/* BENEFITS FOR SHOPS */}
-      <section className="bg-white py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center">Para oficinas: venda mais, perca menos</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-            {benefits.map((b) => {
-              const Icon = b.icon;
-              return (
-                <div key={b.title} className="rounded-2xl border border-slate-200 p-6 card-hover">
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold text-lg">{b.title}</h3>
-                  <p className="text-slate-600 mt-1.5">{b.desc}</p>
+      {/* FUNCIONALIDADES */}
+      <section id="funcionalidades" className="py-20 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Tudo que sua oficina precisa
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              Em um sistema simples, rápido e feito para mecânicos — não para contadores.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="p-6 rounded-2xl border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all group">
+                <div className="w-10 h-10 bg-blue-50 group-hover:bg-blue-100 rounded-xl flex items-center justify-center mb-4 transition-colors">
+                  <f.icon className="w-5 h-5 text-blue-600" />
                 </div>
-              );
-            })}
+                <h3 className="font-bold text-slate-900 mb-2">{f.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* MARKET OPPORTUNITY */}
-      <section className="py-20" style={{ background: "#172554" }}>
-        <div className="max-w-4xl mx-auto px-6 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-bold">Uma oportunidade de R$ 87 bilhões</h2>
-          <div className="mt-12">
-            <div className="rounded-2xl p-8" style={{ background: "#1e3a8a" }}>
-              <p className="text-2xl font-bold">TAM — R$ 87B</p>
-              <p className="text-slate-300">Mercado total de reparos automotivos</p>
-              <div className="rounded-2xl p-8 mt-4" style={{ background: "#2563eb" }}>
-                <p className="text-2xl font-bold">SAM — R$ 8,7B</p>
-                <p className="text-blue-100">50 mil oficinas com ticket acima de R$1.500</p>
-                <div className="rounded-2xl p-8 mt-4" style={{ background: "#3b82f6" }}>
-                  <p className="text-2xl font-bold">SOM — R$ 87M</p>
-                  <p className="text-blue-50">Meta conservadora: 1% em 3 anos</p>
+      {/* COMO FUNCIONA */}
+      <section id="como-funciona" className="py-20 px-4 bg-slate-950">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Começa a usar hoje mesmo
+            </h2>
+            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+              Sem instalação, sem treinamento longo, sem complicação.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {STEPS.map((s, i) => (
+              <div key={s.n} className="relative">
+                <div className="text-5xl font-black text-blue-600/20 mb-3">{s.n}</div>
+                <h3 className="font-bold text-white text-lg mb-2">{s.title}</h3>
+                <p className="text-slate-400 text-sm leading-relaxed">{s.desc}</p>
+                {i < STEPS.length - 1 && (
+                  <ChevronRight className="hidden md:block absolute top-6 -right-4 w-5 h-5 text-slate-700" />
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-12">
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-xl transition-all hover:scale-105"
+            >
+              Quero agendar minha demo <ArrowRight className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* DEPOIMENTOS */}
+      <section id="depoimentos" className="py-20 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Oficinas que já transformaram a gestão
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((t) => (
+              <div key={t.name} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                <div className="flex gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                  ))}
+                </div>
+                <p className="text-slate-700 text-sm leading-relaxed mb-4">&ldquo;{t.text}&rdquo;</p>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm">{t.name}</p>
+                  <p className="text-xs text-slate-500">{t.role}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section className="py-20 px-4 bg-blue-600">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-1.5 mb-6">
+            <Shield className="w-3.5 h-3.5 text-white" />
+            <span className="text-white text-sm font-medium">Demo gratuita · Sem compromisso</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Sua oficina organizada em menos de 1 hora
+          </h2>
+          <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
+            Agende agora uma demo de 20 minutos e veja como o OficinaPro funciona na prática — com os dados da sua oficina.
+          </p>
+
+          <div className="bg-white/10 rounded-2xl p-6 mb-8 max-w-sm mx-auto text-left">
+            <p className="text-white font-semibold mb-3 text-sm uppercase tracking-wide">O que está incluso:</p>
+            <div className="space-y-2">
+              {CHECKLIST.map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-blue-200 flex-shrink-0" />
+                  <span className="text-white text-sm">{item}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <p className="mt-10 text-slate-200 max-w-2xl mx-auto">
-            Com apenas 1% de penetração no SAM, AutoCred projeta R$87M em volume financiado — gerando R$5.7M em comissões anuais.
-          </p>
-        </div>
-      </section>
 
-      {/* BENEFITS FOR PARTNERS */}
-      <section id="parceiros" className="bg-white py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center">
-            Para parceiros financeiros: demanda qualificada, zero CAC
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            {[
-              { title: "Novo canal de distribuição", desc: "Acesse milhares de oficinas e clientes prontos para financiar reparos." },
-              { title: "Clientes pré-triados", desc: "Cada solicitação chega com pré-análise de risco e dados validados." },
-              { title: "Integração 100% digital", desc: "API e fluxo automatizado. Decisão em horas, sem papelada." },
-            ].map((p) => (
-              <div key={p.title} className="rounded-2xl border border-slate-200 p-8 card-hover">
-                <CheckCircle className="w-8 h-8 text-green-500 mb-4" />
-                <h3 className="font-semibold text-lg">{p.title}</h3>
-                <p className="text-slate-600 mt-2">{p.desc}</p>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-3 gap-6 mt-12 max-w-3xl mx-auto text-center">
-            <div><p className="text-2xl font-bold text-blue-600">20+</p><p className="text-sm text-slate-500">oficinas na plataforma</p></div>
-            <div><p className="text-2xl font-bold text-blue-600">100%</p><p className="text-sm text-slate-500">digital e sem papel</p></div>
-            <div><p className="text-2xl font-bold text-blue-600">&lt; 2h</p><p className="text-sm text-slate-500">tempo de pré-análise</p></div>
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section id="precos" className="bg-slate-50 py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-center">Planos e preços</h2>
-          <div className="grid md:grid-cols-3 gap-6 mt-12 items-start">
-            {plans.map((p) => (
-              <div
-                key={p.name}
-                className={`rounded-2xl p-8 bg-white border ${p.highlight ? "border-blue-600 shadow-xl ring-2 ring-blue-600 md:-translate-y-2" : "border-slate-200"}`}
-              >
-                {p.highlight && (
-                  <span className="inline-block text-xs font-semibold bg-blue-600 text-white rounded-full px-3 py-1 mb-3">Mais popular</span>
-                )}
-                <h3 className="text-xl font-bold">{p.name}</h3>
-                <p className="text-3xl font-bold mt-2">{p.price}<span className="text-base font-normal text-slate-500">/mês</span></p>
-                <ul className="mt-6 space-y-3">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-slate-700">
-                      <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/auth/cadastro">
-                  <Button className={`w-full mt-8 ${p.highlight ? "bg-blue-600 hover:bg-blue-500" : ""}`} variant={p.highlight ? "default" : "outline"}>
-                    Começar
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
-      <section className="py-20" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #0f172a 100%)" }}>
-        <div className="max-w-3xl mx-auto px-6 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-bold">
-            Comece hoje. As próximas vendas que você perder custam mais que o plano.
-          </h2>
-          <Link href="/auth/cadastro">
-            <Button size="lg" className="mt-8 bg-blue-600 hover:bg-blue-500 gap-2">
-              Criar conta gratuita <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-white text-blue-600 font-bold px-10 py-4 rounded-xl text-base transition-all hover:scale-105 shadow-xl"
+          >
+            Agendar demo gratuita <ArrowRight className="w-5 h-5" />
+          </a>
+          <p className="text-blue-200 text-sm mt-4">Respondemos em menos de 2 horas</p>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-900 text-slate-400 py-12">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-white">
-              <CreditCard className="w-5 h-5" /> <span className="font-bold">AutoCred</span>
+      <footer className="bg-slate-950 py-10 px-4">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Wrench className="w-3.5 h-3.5 text-white" />
             </div>
-            <p className="mt-2 text-sm">© 2024 AutoCred. Todos os direitos reservados.</p>
+            <span className="font-bold text-white">OficinaPro</span>
           </div>
-          <div className="flex gap-10 text-sm">
-            <div className="space-y-2">
-              <p className="text-white font-semibold">Produto</p>
-              <a href="#como-funciona" className="block hover:text-white">Como funciona</a>
-              <a href="#precos" className="block hover:text-white">Preços</a>
-            </div>
-            <div className="space-y-2">
-              <p className="text-white font-semibold">Empresa</p>
-              <Link href="/investidor" className="block hover:text-white">Para investidores</Link>
-              <Link href="/auth/login" className="block hover:text-white">Entrar</Link>
-            </div>
+          <p className="text-slate-500 text-sm">© 2026 OficinaPro. Todos os direitos reservados.</p>
+          <div className="flex gap-6">
+            <Link href="/auth/login" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Entrar</Link>
+            <Link href="/auth/cadastro" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Cadastrar</Link>
           </div>
         </div>
       </footer>

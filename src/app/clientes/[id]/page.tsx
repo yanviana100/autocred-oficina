@@ -4,8 +4,12 @@ import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Car, FileText, ArrowLeft, Phone, Mail, MapPin, ClipboardList } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Car, FileText, ArrowLeft, Phone, Mail, MapPin, ClipboardList, Plus, X } from "lucide-react";
 import { useCustomers, useVehicles, useQuotes, useServiceOrders } from "@/hooks/useStore";
+import { useToast } from "@/components/ui/toast";
 import { formatDate, formatCurrency, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
 import type { Customer, Vehicle, Quote, ServiceOrder } from "@/types";
 
@@ -19,18 +23,27 @@ const osStatusColor: Record<string, string> = {
   finalizado: "bg-emerald-100 text-emerald-700", entregue: "bg-green-100 text-green-700",
 };
 
+const marcas = ["Toyota","Honda","Volkswagen","Chevrolet","Ford","Hyundai","Fiat","Renault","Nissan","Jeep","Mitsubishi","Kia","Outras"];
+
 export default function ClienteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { get: getCustomer } = useCustomers();
-  const { byCustomer: vehiclesByCustomer } = useVehicles();
+  const { byCustomer: vehiclesByCustomer, create: createVehicle } = useVehicles();
   const { byCustomer: quotesByCustomer } = useQuotes();
   const { byCustomer: ordersByCustomer } = useServiceOrders();
+  const { toast } = useToast();
 
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [orders, setOrders] = useState<ServiceOrder[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Adicionar veículo
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
+  const [savingVehicle, setSavingVehicle] = useState(false);
+  const [vForm, setVForm] = useState({ plate: "", brand: "", model: "", year: "", mileage: "", color: "" });
+  const years = Array.from({ length: 37 }, (_, i) => String(new Date().getFullYear() + 1 - i));
 
   useEffect(() => {
     async function load() {
@@ -41,18 +54,33 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
     load();
   }, [id, getCustomer]);
 
-  // byCustomer é síncrono — filtra dos dados já carregados nos hooks
-  useEffect(() => {
-    setVehicles(vehiclesByCustomer(id));
-  }, [id, vehiclesByCustomer]);
+  useEffect(() => { setVehicles(vehiclesByCustomer(id)); }, [id, vehiclesByCustomer]);
+  useEffect(() => { setQuotes(quotesByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())); }, [id, quotesByCustomer]);
+  useEffect(() => { setOrders(ordersByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())); }, [id, ordersByCustomer]);
 
-  useEffect(() => {
-    setQuotes(quotesByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  }, [id, quotesByCustomer]);
-
-  useEffect(() => {
-    setOrders(ordersByCustomer(id).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-  }, [id, ordersByCustomer]);
+  const handleAddVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vForm.plate.trim() || !vForm.brand || !vForm.model.trim() || !vForm.year) {
+      toast("Preencha placa, marca, modelo e ano.", "warning");
+      return;
+    }
+    if (!customer) return;
+    setSavingVehicle(true);
+    await createVehicle({
+      customerId: id,
+      workshopId: customer.workshopId,
+      plate: vForm.plate.trim().toUpperCase(),
+      brand: vForm.brand,
+      model: vForm.model.trim(),
+      year: Number(vForm.year),
+      mileage: Number(vForm.mileage) || 0,
+      color: vForm.color.trim() || undefined,
+    });
+    setVForm({ plate: "", brand: "", model: "", year: "", mileage: "", color: "" });
+    setShowAddVehicle(false);
+    setSavingVehicle(false);
+    toast("Veículo adicionado!");
+  };
 
   if (loading) {
     return <DashboardLayout title="Carregando..." subtitle=""><div className="animate-pulse h-4 bg-slate-200 rounded w-48" /></DashboardLayout>;
@@ -86,7 +114,7 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-slate-600"><Phone className="w-3.5 h-3.5 text-slate-400" />{customer.whatsapp}</div>
                 {customer.email && <div className="flex items-center gap-2 text-slate-600"><Mail className="w-3.5 h-3.5 text-slate-400" />{customer.email}</div>}
-                <div className="flex items-center gap-2 text-slate-600"><MapPin className="w-3.5 h-3.5 text-slate-400" />{customer.city}, {customer.state}</div>
+                {customer.city && <div className="flex items-center gap-2 text-slate-600"><MapPin className="w-3.5 h-3.5 text-slate-400" />{customer.city}{customer.state ? `, ${customer.state}` : ""}</div>}
                 {customer.address && <p className="text-xs text-slate-400 pl-5">{customer.address}</p>}
               </div>
             </CardContent>
@@ -114,29 +142,95 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="xl:col-span-2 space-y-6">
+          {/* Veículos */}
           <Card>
-            <CardHeader className="pb-2 flex-row items-center gap-2 space-y-0">
-              <Car className="w-4 h-4 text-blue-600" />
-              <CardTitle className="text-sm">Veículos</CardTitle>
+            <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+              <div className="flex items-center gap-2">
+                <Car className="w-4 h-4 text-blue-600" />
+                <CardTitle className="text-sm">Veículos</CardTitle>
+              </div>
+              <button
+                onClick={() => setShowAddVehicle((v) => !v)}
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {showAddVehicle ? <><X className="w-3.5 h-3.5" /> Cancelar</> : <><Plus className="w-3.5 h-3.5" /> Adicionar veículo</>}
+              </button>
             </CardHeader>
             <CardContent>
-              {vehicles.length === 0 ? (
+              {vehicles.length === 0 && !showAddVehicle && (
                 <p className="text-sm text-slate-400">Nenhum veículo cadastrado.</p>
-              ) : (
-                <div className="space-y-2">
+              )}
+              {vehicles.length > 0 && (
+                <div className="space-y-2 mb-3">
                   {vehicles.map((v) => (
-                    <div key={v.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-50">
+                    <Link key={v.id} href={`/veiculos/${v.id}`} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
                       <div>
                         <p className="font-medium text-sm">{v.brand} {v.model} {v.year}</p>
-                        <p className="text-xs text-slate-500">Placa: {v.plate} · {v.mileage.toLocaleString("pt-BR")} km {v.color ? `· ${v.color}` : ""}</p>
+                        <p className="text-xs text-slate-500">
+                          <span className="font-mono font-semibold">{v.plate}</span>
+                          {v.mileage ? ` · ${v.mileage.toLocaleString("pt-BR")} km` : ""}
+                          {v.color ? ` · ${v.color}` : ""}
+                        </p>
                       </div>
-                    </div>
+                      <span className="text-xs text-blue-500">Ver histórico →</span>
+                    </Link>
                   ))}
                 </div>
+              )}
+
+              {showAddVehicle && (
+                <form onSubmit={handleAddVehicle} className="border border-blue-100 bg-blue-50 rounded-lg p-4 space-y-3 mt-2">
+                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Novo veículo</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">Placa *</Label>
+                      <Input
+                        placeholder="ABC-1D23"
+                        className="uppercase tracking-widest font-mono bg-white"
+                        value={vForm.plate}
+                        onChange={(e) => setVForm((f) => ({ ...f, plate: e.target.value.toUpperCase() }))}
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Marca *</Label>
+                      <Select value={vForm.brand} onValueChange={(v) => setVForm((f) => ({ ...f, brand: v }))}>
+                        <SelectTrigger className="h-9 bg-white"><SelectValue placeholder="Marca" /></SelectTrigger>
+                        <SelectContent>{marcas.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Modelo *</Label>
+                      <Input placeholder="Gol, Civic..." className="h-9 bg-white" value={vForm.model} onChange={(e) => setVForm((f) => ({ ...f, model: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Ano *</Label>
+                      <Select value={vForm.year} onValueChange={(v) => setVForm((f) => ({ ...f, year: v }))}>
+                        <SelectTrigger className="h-9 bg-white"><SelectValue placeholder="Ano" /></SelectTrigger>
+                        <SelectContent>{years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">KM atual</Label>
+                      <Input type="number" min={0} placeholder="45000" className="h-9 bg-white" value={vForm.mileage} onChange={(e) => setVForm((f) => ({ ...f, mileage: e.target.value }))} />
+                    </div>
+                    <div className="col-span-2 space-y-1">
+                      <Label className="text-xs">Cor</Label>
+                      <Input placeholder="Branco, Prata..." className="h-9 bg-white" value={vForm.color} onChange={(e) => setVForm((f) => ({ ...f, color: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => setShowAddVehicle(false)}>Cancelar</Button>
+                    <Button type="submit" size="sm" className="flex-1" disabled={savingVehicle}>
+                      {savingVehicle ? "Salvando..." : "Salvar veículo"}
+                    </Button>
+                  </div>
+                </form>
               )}
             </CardContent>
           </Card>
 
+          {/* Orçamentos */}
           <Card>
             <CardHeader className="pb-2 flex-row items-center gap-2 space-y-0">
               <FileText className="w-4 h-4 text-violet-600" />
@@ -167,6 +261,7 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
             </CardContent>
           </Card>
 
+          {/* OS */}
           <Card>
             <CardHeader className="pb-2 flex-row items-center gap-2 space-y-0">
               <ClipboardList className="w-4 h-4 text-emerald-600" />

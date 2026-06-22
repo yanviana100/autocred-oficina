@@ -20,6 +20,7 @@ import {
   ClipboardList,
   BarChart2,
   Receipt,
+  CalendarDays,
 } from "lucide-react";
 import { cn, planLabel } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -38,6 +39,7 @@ const creditItems: NavItem[] = [
 ];
 
 const gestaoItems: NavItem[] = [
+  { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/veiculos", label: "Veículos", icon: Car },
   { href: "/orcamentos", label: "Orçamentos", icon: FileText },

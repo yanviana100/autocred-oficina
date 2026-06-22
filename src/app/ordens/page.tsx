@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const paymentLabels: Record<PaymentMethod, string> = {
 const serviceTypes = ["Motor","Câmbio","Suspensão","Freios","Elétrica","Ar-condicionado","Funilaria","Pintura","Revisão","Alinhamento e Balanceamento","Escapamento","Outro"];
 
 export default function OrdensPage() {
+  const router = useRouter();
   const { orders, updateStatus, update, markAsPaid, createAvulsa } = useServiceOrders();
   const { customers } = useCustomers();
   const { vehicles } = useVehicles();
@@ -101,7 +103,7 @@ export default function OrdensPage() {
     setSavingAvulsa(true);
     const customer = customers.find((c) => c.id === avulsa.customerId);
     const vehicle = vehicles.find((v) => v.id === avulsa.vehicleId);
-    await createAvulsa({
+    const newOs = await createAvulsa({
       customerId: avulsa.customerId,
       customerName: customer?.name ?? "",
       vehicleId: avulsa.vehicleId,
@@ -118,6 +120,7 @@ export default function OrdensPage() {
     setShowAvulsa(false);
     setAvulsa({ customerId: "", vehicleId: "", serviceType: "", problemDescription: "", technicianName: "", totalValue: "", kmEntrada: "", expectedDate: "", notes: "" });
     toast("OS criada com sucesso!");
+    if (newOs?.id) router.push(`/ordens/${newOs.id}`);
   };
 
   const totals = Object.fromEntries(
@@ -289,7 +292,7 @@ export default function OrdensPage() {
             const isPaid = o.paymentStatus === "pago";
             const isFinished = ["finalizado", "entregue"].includes(o.status);
             return (
-              <Card key={o.id} className="hover:shadow-md transition-shadow">
+              <Card key={o.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => window.location.href = `/ordens/${o.id}`}>
                 <CardContent className="p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">

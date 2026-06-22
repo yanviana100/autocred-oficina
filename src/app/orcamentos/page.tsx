@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "
 import type { QuoteStatus } from "@/types";
 
 export default function OrcamentosPage() {
+  const router = useRouter();
   const { quotes, approve, update } = useQuotes();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
@@ -104,7 +106,7 @@ export default function OrcamentosPage() {
               </thead>
               <tbody className="divide-y">
                 {filtered.map((q, i) => (
-                  <tr key={q.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={q.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => router.push(`/orcamentos/${q.id}`)}>
                     <td className="px-4 py-3 text-slate-400 font-mono text-xs">{String(i + 1).padStart(3, "0")}</td>
                     <td className="px-4 py-3 font-medium text-slate-900">{q.customerName}</td>
                     <td className="px-4 py-3 text-slate-600 text-xs">{q.vehicleInfo}</td>
@@ -117,13 +119,11 @@ export default function OrcamentosPage() {
                         {quoteStatusLabel[q.status]}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
-                        <Link href={`/orcamentos/${q.id}`}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver orçamento">
-                            <Eye className="w-3.5 h-3.5" />
-                          </Button>
-                        </Link>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Ver orçamento" onClick={() => router.push(`/orcamentos/${q.id}`)}>
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
                         <Link href={`/orcamentos/${q.id}/imprimir`} target="_blank">
                           <Button variant="ghost" size="icon" className="h-7 w-7" title="Imprimir / PDF">
                             <Printer className="w-3.5 h-3.5" />

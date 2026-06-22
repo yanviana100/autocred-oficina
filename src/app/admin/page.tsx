@@ -1,323 +1,321 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
-  Building2, FileText, DollarSign, Users, TrendingUp, BarChart2,
-  Shield, CheckCircle, Zap,
+  Building2, Users, ClipboardList, FileText, Search,
+  ShieldOff, Shield, TrendingUp, RefreshCw, AlertTriangle,
 } from "lucide-react";
-import { mockAdminMetrics, mockAllWorkshops, platformMonthlyData } from "@/data/mock";
-import { formatCurrency, formatDate, planLabel, planColor, formatCurrencyShort } from "@/lib/utils";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, AreaChart, Area,
-} from "recharts";
+import { getSupabase } from "@/lib/db";
+import { formatDate, formatCurrency, planLabel, planColor } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
-const planPrices = { starter: 99, pro: 249, premium: 499 };
+interface WorkshopRow {
+  id: string;
+  name: string;
+  email: string;
+  plan: string;
+  suspended_at: string | null;
+  onboarding_completed: boolean;
+  trial_ends_at: string | null;
+  created_at: string;
+  customer_count: number;
+  os_count: number;
+  os_this_month: number;
+  quote_count: number;
+}
 
-const planData = [
-  { name: "Starter",  value: mockAdminMetrics.workshopsByPlan.starter,  color: "#94a3b8" },
-  { name: "Pro",      value: mockAdminMetrics.workshopsByPlan.pro,       color: "#3b82f6" },
-  { name: "Premium",  value: mockAdminMetrics.workshopsByPlan.premium,   color: "#8b5cf6" },
-];
+interface AdminData {
+  total_workshops: number;
+  active_workshops: number;
+  total_os: number;
+  os_this_month: number;
+  total_customers: number;
+  total_quotes: number;
+  workshops: WorkshopRow[];
+}
 
-const revenueBreakdown = [
-  { nome: "SaaS Starter",  valor: mockAdminMetrics.workshopsByPlan.starter  * planPrices.starter,  cor: "#94a3b8" },
-  { nome: "SaaS Pro",      valor: mockAdminMetrics.workshopsByPlan.pro      * planPrices.pro,       cor: "#3b82f6" },
-  { nome: "SaaS Premium",  valor: mockAdminMetrics.workshopsByPlan.premium  * planPrices.premium,   cor: "#8b5cf6" },
-  { nome: "Comissão 2.5%", valor: mockAdminMetrics.commissionRevenue,                              cor: "#10b981" },
-];
-
-const projectionData = [
-  { ano: "2024", mrr: 28450,  comissao: 64312  },
-  { ano: "2025", mrr: 94500,  comissao: 245000 },
-  { ano: "2026", mrr: 249000, comissao: 820000 },
-  { ano: "2027", mrr: 598000, comissao: 2450000},
-];
-
-const calculatedMRR =
-  mockAdminMetrics.workshopsByPlan.starter * planPrices.starter +
-  mockAdminMetrics.workshopsByPlan.pro     * planPrices.pro     +
-  mockAdminMetrics.workshopsByPlan.premium * planPrices.premium;
-
-type Tab = "operacional" | "financeiro" | "oficinas";
-
-const ADMIN_EMAILS = ["vianayan99@gmail.com"];
+const PLAN_PRICE: Record<string, number> = { starter: 150, pro: 250, premium: 399 };
 
 export default function AdminPage() {
-  const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("operacional");
+  const router = useRouter();
+  const { toast } = useToast();
+  const [data, setData] = useState<AdminData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [unauthorized, setUnauthorized] = useState(false);
+  const [search, setSearch] = useState("");
+  const [planFilter, setPlanFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ id: string; name: string; type: "suspend" | "reactivate" | "plan"; plan?: string } | null>(null);
 
-  useEffect(() => {}, []); // keep hook order stable
+  const load = useCallback(async () => {
+    setLoading(true);
+    const supabase = getSupabase();
+    const { data: result, error } = await supabase.rpc("get_admin_data");
+    if (error) {
+      if (error.message.includes("Unauthorized")) { setUnauthorized(true); }
+      setLoading(false);
+      return;
+    }
+    setData(result as AdminData);
+    setLoading(false);
+  }, []);
 
-  if (!user || !ADMIN_EMAILS.includes(user.email ?? "")) {
+  useEffect(() => { load(); }, [load]);
+
+  const handleSuspend = async (workshopId: string, suspend: boolean) => {
+    setActionLoading(workshopId);
+    const supabase = getSupabase();
+    const { error } = await supabase.rpc("admin_toggle_suspend", { p_workshop_id: workshopId, p_suspend: suspend });
+    if (error) { toast("Erro ao atualizar.", "error"); }
+    else { toast(suspend ? "Oficina suspensa." : "Acesso reativado!"); await load(); }
+    setActionLoading(null);
+    setConfirmAction(null);
+  };
+
+  const handleChangePlan = async (workshopId: string, plan: string) => {
+    setActionLoading(workshopId);
+    const supabase = getSupabase();
+    const { error } = await supabase.rpc("admin_change_plan", { p_workshop_id: workshopId, p_plan: plan });
+    if (error) { toast("Erro ao alterar plano.", "error"); }
+    else { toast("Plano alterado!"); await load(); }
+    setActionLoading(null);
+    setConfirmAction(null);
+  };
+
+  if (unauthorized) {
     return (
       <DashboardLayout title="Admin" subtitle="">
-        <div className="flex flex-col items-center justify-center py-32 text-center">
-          <Shield className="w-12 h-12 text-slate-300 mb-4" />
-          <p className="text-slate-600 font-medium">Acesso restrito</p>
-          <p className="text-sm text-slate-400 mt-1">Esta área é exclusiva para administradores AutoCred.</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <ShieldOff className="w-12 h-12 text-red-400" />
+          <h2 className="text-xl font-bold text-slate-900">Acesso negado</h2>
+          <p className="text-slate-500 text-sm">Você não tem permissão para acessar esta área.</p>
+          <Button onClick={() => router.push("/dashboard")}>Voltar ao dashboard</Button>
         </div>
       </DashboardLayout>
     );
   }
 
+  const workshops = data?.workshops ?? [];
+  const filtered = workshops.filter((w) => {
+    const matchSearch = !search ||
+      w.name.toLowerCase().includes(search.toLowerCase()) ||
+      w.email.toLowerCase().includes(search.toLowerCase());
+    const matchPlan = planFilter === "todos" || w.plan === planFilter;
+    const matchStatus = statusFilter === "todos" ||
+      (statusFilter === "ativo" && !w.suspended_at && w.onboarding_completed) ||
+      (statusFilter === "suspenso" && !!w.suspended_at) ||
+      (statusFilter === "pendente" && !w.onboarding_completed);
+    return matchSearch && matchPlan && matchStatus;
+  });
+
+  const mrr = workshops
+    .filter((w) => !w.suspended_at)
+    .reduce((sum, w) => sum + (PLAN_PRICE[w.plan] ?? 0), 0);
+
   return (
-    <DashboardLayout title="Painel Administrativo" subtitle="Visão geral da plataforma AutoCred">
-      {/* Banner */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-slate-800 to-blue-900 rounded-xl text-white flex items-center gap-3">
-        <Shield className="w-8 h-8 text-blue-300 flex-shrink-0" />
-        <div>
-          <p className="font-bold">Área Administrativa — Acesso Restrito</p>
-          <p className="text-sm text-blue-200">Dados da plataforma em tempo real (mockado para demonstração)</p>
+    <DashboardLayout title="Admin" subtitle="Painel de administração da plataforma">
+      {/* Confirm modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <h3 className="font-semibold">Confirmar ação</h3>
+            </div>
+            {confirmAction.type === "suspend" && (
+              <p className="text-sm text-slate-500 mb-6">Suspender acesso de <strong>{confirmAction.name}</strong>? A oficina não conseguirá mais fazer login.</p>
+            )}
+            {confirmAction.type === "reactivate" && (
+              <p className="text-sm text-slate-500 mb-6">Reativar acesso de <strong>{confirmAction.name}</strong>?</p>
+            )}
+            {confirmAction.type === "plan" && (
+              <p className="text-sm text-slate-500 mb-6">Alterar plano de <strong>{confirmAction.name}</strong> para <strong>{planLabel[confirmAction.plan ?? ""] ?? confirmAction.plan}</strong>?</p>
+            )}
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmAction(null)}>Cancelar</Button>
+              <Button
+                className={`flex-1 ${confirmAction.type === "suspend" ? "bg-red-600 hover:bg-red-700 text-white" : ""}`}
+                disabled={!!actionLoading}
+                onClick={() => {
+                  if (confirmAction.type === "suspend") handleSuspend(confirmAction.id, true);
+                  else if (confirmAction.type === "reactivate") handleSuspend(confirmAction.id, false);
+                  else if (confirmAction.type === "plan") handleChangePlan(confirmAction.id, confirmAction.plan!);
+                }}
+              >
+                {actionLoading ? "Aguarde..." : "Confirmar"}
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-slate-100 rounded-lg p-1 w-fit">
-        {([
-          { key: "operacional", label: "Operacional" },
-          { key: "financeiro",  label: "Financeiro"  },
-          { key: "oficinas",    label: "Oficinas"    },
-        ] as const).map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              tab === t.key ? "bg-white shadow text-slate-900" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="space-y-6">
+        {/* KPIs */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Oficinas ativas", value: loading ? "—" : data?.active_workshops ?? 0, icon: Building2, color: "text-blue-600", bg: "bg-blue-50" },
+            { label: "MRR", value: loading ? "—" : formatCurrency(mrr), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+            { label: "OS este mês", value: loading ? "—" : data?.os_this_month ?? 0, icon: ClipboardList, color: "text-violet-600", bg: "bg-violet-50" },
+            { label: "Total clientes", value: loading ? "—" : data?.total_customers ?? 0, icon: Users, color: "text-amber-600", bg: "bg-amber-50" },
+          ].map((k) => (
+            <Card key={k.label}>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${k.bg}`}>
+                  <k.icon className={`w-5 h-5 ${k.color}`} />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">{k.label}</p>
+                  <p className="text-xl font-bold text-slate-900">{String(k.value)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      {/* ═══════════════════════════════════ OPERACIONAL ══════════════════════════════ */}
-      {tab === "operacional" && (
-        <>
-          {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+        {/* Filtros */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-600" />
+                Oficinas ({filtered.length})
+              </CardTitle>
+              <button onClick={load} className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <Input placeholder="Buscar por nome ou e-mail..." className="pl-9 h-8 text-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+              </div>
+              <select value={planFilter} onChange={(e) => setPlanFilter(e.target.value)} className="h-8 text-sm border border-slate-200 rounded-lg px-3 bg-white">
+                <option value="todos">Todos os planos</option>
+                <option value="starter">Starter</option>
+                <option value="pro">Pro</option>
+                <option value="premium">Premium</option>
+              </select>
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-8 text-sm border border-slate-200 rounded-lg px-3 bg-white">
+                <option value="todos">Todos os status</option>
+                <option value="ativo">Ativo</option>
+                <option value="suspenso">Suspenso</option>
+                <option value="pendente">Onboarding pendente</option>
+              </select>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Carregando...</div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Nenhuma oficina encontrada.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-slate-50">
+                    <tr className="text-left text-xs text-slate-500">
+                      <th className="px-4 py-3 font-semibold">Oficina</th>
+                      <th className="px-4 py-3 font-semibold">Plano</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold text-center">Clientes</th>
+                      <th className="px-4 py-3 font-semibold text-center">OS mês</th>
+                      <th className="px-4 py-3 font-semibold text-center">OS total</th>
+                      <th className="px-4 py-3 font-semibold">Cadastro</th>
+                      <th className="px-4 py-3 font-semibold">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filtered.map((w) => {
+                      const isSuspended = !!w.suspended_at;
+                      const isPending = !w.onboarding_completed;
+                      return (
+                        <tr key={w.id} className={`hover:bg-slate-50 ${isSuspended ? "opacity-60" : ""}`}>
+                          <td className="px-4 py-3">
+                            <p className="font-semibold text-slate-900">{w.name}</p>
+                            <p className="text-xs text-slate-400">{w.email}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={w.plan}
+                              disabled={!!actionLoading}
+                              onChange={(e) => setConfirmAction({ id: w.id, name: w.name, type: "plan", plan: e.target.value })}
+                              className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${planColor[w.plan] ?? "bg-slate-100 text-slate-700"}`}
+                            >
+                              <option value="starter">Starter</option>
+                              <option value="pro">Pro</option>
+                              <option value="premium">Premium</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            {isSuspended ? (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Suspenso</span>
+                            ) : isPending ? (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Onboarding</span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Ativo</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-center font-semibold">{w.customer_count}</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`font-semibold ${w.os_this_month > 0 ? "text-blue-600" : "text-slate-400"}`}>{w.os_this_month}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center text-slate-500">{w.os_count}</td>
+                          <td className="px-4 py-3 text-xs text-slate-400">{formatDate(w.created_at)}</td>
+                          <td className="px-4 py-3">
+                            {isSuspended ? (
+                              <button
+                                onClick={() => setConfirmAction({ id: w.id, name: w.name, type: "reactivate" })}
+                                disabled={!!actionLoading}
+                                className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                              >
+                                <Shield className="w-3.5 h-3.5" /> Reativar
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setConfirmAction({ id: w.id, name: w.name, type: "suspend" })}
+                                disabled={!!actionLoading}
+                                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium"
+                              >
+                                <ShieldOff className="w-3.5 h-3.5" /> Suspender
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Totais extras */}
+        {data && (
+          <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Oficinas ativas",    value: String(mockAdminMetrics.totalWorkshops),                   icon: Building2, color: "bg-blue-500" },
-              { label: "Orçamentos",         value: String(mockAdminMetrics.totalQuotes),                      icon: FileText,  color: "bg-violet-500" },
-              { label: "Volume financiado",  value: formatCurrencyShort(mockAdminMetrics.totalFinancingRequested), icon: DollarSign,color: "bg-amber-500" },
-              { label: "Leads financeiros",  value: String(mockAdminMetrics.totalLeads),                      icon: Users,     color: "bg-orange-500" },
-              { label: "Taxa aprovação",     value: `${mockAdminMetrics.conversionRate}%`,                    icon: TrendingUp,color: "bg-green-500" },
-              { label: "MRR",               value: formatCurrency(calculatedMRR),                             icon: BarChart2, color: "bg-emerald-500" },
-            ].map((m) => (
-              <Card key={m.label} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs text-slate-500 mb-1 leading-tight">{m.label}</p>
-                      <p className="text-lg font-bold text-slate-900">{m.value}</p>
-                    </div>
-                    <div className={`${m.color} rounded-lg p-2`}>
-                      <m.icon className="w-4 h-4 text-white" />
-                    </div>
+              { label: "Total de OS na plataforma", value: data.total_os, icon: ClipboardList },
+              { label: "Total de orçamentos", value: data.total_quotes, icon: FileText },
+              { label: "Total de oficinas cadastradas", value: data.total_workshops, icon: Building2 },
+            ].map((k) => (
+              <Card key={k.label}>
+                <CardContent className="p-4 flex items-center gap-3">
+                  <k.icon className="w-5 h-5 text-slate-400" />
+                  <div>
+                    <p className="text-xs text-slate-500">{k.label}</p>
+                    <p className="text-lg font-bold text-slate-900">{k.value}</p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Crescimento oficinas + financiamentos */}
-            <Card className="xl:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Crescimento da plataforma (Jan–Jun 2024)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={platformMonthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="mes" fontSize={11} stroke="#94a3b8" />
-                    <YAxis fontSize={11} stroke="#94a3b8" />
-                    <Tooltip />
-                    <Bar dataKey="oficinas"       name="Oficinas"        fill="#3b82f6" radius={[3,3,0,0]} />
-                    <Bar dataKey="financiamentos" name="Financiamentos"  fill="#f59e0b" radius={[3,3,0,0]} />
-                    <Bar dataKey="aprovados"      name="Aprovados"       fill="#10b981" radius={[3,3,0,0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Pizza planos */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Distribuição por plano</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={240}>
-                  <PieChart>
-                    <Pie data={planData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" paddingAngle={3}>
-                      {planData.map((e, i) => <Cell key={i} fill={e.color} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => [`${v} oficinas`, ""]} />
-                    <Legend iconType="circle" iconSize={8} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        </>
-      )}
-
-      {/* ═══════════════════════════════════ FINANCEIRO ═══════════════════════════════ */}
-      {tab === "financeiro" && (
-        <>
-          {/* KPIs financeiros */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {[
-              { label: "MRR SaaS",          value: formatCurrency(calculatedMRR),                       color: "text-blue-700" },
-              { label: "Comissão mensal",    value: formatCurrency(mockAdminMetrics.commissionRevenue),  color: "text-emerald-700" },
-              { label: "Receita total/mês",  value: formatCurrency(calculatedMRR + mockAdminMetrics.commissionRevenue), color: "text-slate-900" },
-              { label: "Vol. financiado",    value: formatCurrencyShort(mockAdminMetrics.totalFinancingRequested), color: "text-violet-700" },
-            ].map((k) => (
-              <Card key={k.label}>
-                <CardContent className="p-5">
-                  <p className="text-xs text-slate-500 mb-1">{k.label}</p>
-                  <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-            {/* Breakdown receita — pizza */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Composição da receita mensal</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={revenueBreakdown} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="valor" nameKey="nome" paddingAngle={3}>
-                      {revenueBreakdown.map((e, i) => <Cell key={i} fill={e.cor} />)}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => [formatCurrency(v), ""]} />
-                    <Legend iconType="circle" iconSize={8} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            {/* Projeção volume financiado */}
-            <Card className="xl:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Volume financiado mensal (R$)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={platformMonthlyData}>
-                    <defs>
-                      <linearGradient id="gVol3" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#2563eb" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0}   />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="mes" fontSize={12} stroke="#94a3b8" />
-                    <YAxis fontSize={12} stroke="#94a3b8" tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Area type="monotone" dataKey="volume" name="Volume" stroke="#2563eb" fill="url(#gVol3)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="comissao" name="Comissão" stroke="#10b981" strokeWidth={2} fill="none" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Tabela de projeção */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-500" /> Projeção de crescimento — 2024→2027
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b">
-                    <tr>
-                      {["Ano", "Oficinas", "MRR SaaS", "Comissão/mês", "Receita total/mês"].map((h) => (
-                        <th key={h} className="px-4 py-2 text-left text-xs font-medium text-slate-500">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {projectionData.map((r) => (
-                      <tr key={r.ano} className={r.ano === "2024" ? "bg-blue-50 font-semibold" : "hover:bg-slate-50"}>
-                        <td className="px-4 py-3 font-bold">{r.ano}</td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {r.ano === "2024" ? "134" : r.ano === "2025" ? "500" : r.ano === "2026" ? "1.500" : "4.000"}
-                        </td>
-                        <td className="px-4 py-3 text-blue-700">{formatCurrency(r.mrr)}</td>
-                        <td className="px-4 py-3 text-emerald-700">{formatCurrency(r.comissao)}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900">{formatCurrency(r.mrr + r.comissao)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-      {/* ═══════════════════════════════════ OFICINAS ══════════════════════════════════ */}
-      {tab === "oficinas" && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-blue-600" /> Oficinas cadastradas ({mockAllWorkshops.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b">
-                  <tr>
-                    {["Oficina", "Responsável", "Cidade", "Plano", "Vol. financiado", "Comissão", "Taxa aprox.", "Desde", "Status"].map((h) => (
-                      <th key={h} className="px-4 py-2 text-left text-xs font-medium text-slate-500">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {mockAllWorkshops.map((w) => (
-                    <tr key={w.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium max-w-[180px] truncate">{w.name}</td>
-                      <td className="px-4 py-3 text-slate-600">{w.owner}</td>
-                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{w.city}, {w.state}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${planColor[w.plan]}`}>
-                          {planLabel[w.plan]}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-violet-700 whitespace-nowrap">
-                        {w.totalFinanced ? formatCurrencyShort(w.totalFinanced) : "—"}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-emerald-700 whitespace-nowrap">
-                        {w.totalCommission ? formatCurrency(w.totalCommission) : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {w.approvalRate ? `${w.approvalRate}%` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">{formatDate(w.createdAt)}</td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          <CheckCircle className="w-3 h-3" /> Ativo
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        )}
+      </div>
     </DashboardLayout>
   );
 }

@@ -76,7 +76,7 @@ export default function AgendaPage() {
 
     const { data } = await supabase
       .from("service_orders")
-      .select("id, number, customer_name, vehicle_info, service_type, status, expected_date, total_value, technician_name")
+      .select("id, os_number, customer_name, vehicle_info, service_type, status, expected_date, total_value, technician_name")
       .eq("workshop_id", workshopId)
       .not("expected_date", "is", null)
       .gte("expected_date", from.toISOString().split("T")[0])
@@ -85,7 +85,7 @@ export default function AgendaPage() {
 
     setOs((data ?? []).map((r) => ({
       id: r.id,
-      os_number: r.number,
+      os_number: r.os_number,
       customer_name: r.customer_name,
       vehicle_info: r.vehicle_info,
       service_type: r.service_type,
@@ -150,7 +150,7 @@ export default function AgendaPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={goToday} className="text-xs">Hoje</Button>
-            <Link href="/ordens/nova">
+            <Link href="/ordens">
               <Button size="sm" className="gap-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="w-3.5 h-3.5" /> Nova OS
               </Button>
@@ -200,7 +200,7 @@ export default function AgendaPage() {
                   ) : dayOs.length === 0 ? (
                     <p className="text-xs text-slate-300 text-center py-3">—</p>
                   ) : dayOs.map((o) => (
-                    <Link key={o.id} href={`/ordens/${o.id}`}>
+                    <Link key={o.id} href={`/ordens`}>
                       <div className={`rounded-lg px-2.5 py-2 border cursor-pointer hover:shadow-sm transition-shadow ${STATUS_COLOR[o.status] ?? "bg-slate-100 text-slate-600 border-slate-200"}`}>
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[o.status] ?? "bg-slate-400"}`} />
@@ -241,7 +241,7 @@ export default function AgendaPage() {
                   Ao criar uma OS, preencha a <strong>data prevista de conclusão</strong> para ela aparecer aqui.
                 </p>
               </div>
-              <Link href="/ordens/nova">
+              <Link href="/ordens">
                 <Button size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="w-3.5 h-3.5" /> Criar primeira OS
                 </Button>

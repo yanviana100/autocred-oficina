@@ -66,7 +66,7 @@ function OnboardingChecklist({ hasCustomers, hasVehicles, hasQuotes, hasOrders, 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ChecklistItem done={hasCustomers} label="Cadastre seu primeiro cliente" href="/clientes" />
           <ChecklistItem done={hasVehicles} label="Adicione um veículo" href="/veiculos" />
-          <ChecklistItem done={hasOrders} label="Crie uma ordem de serviço" href="/ordens/nova" />
+          <ChecklistItem done={hasOrders} label="Crie uma ordem de serviço" href="/ordens" />
           <ChecklistItem done={hasQuotes} label="Envie seu primeiro orçamento" href="/orcamentos/novo" />
           <ChecklistItem done={hasProfile} label="Complete o perfil da oficina" href="/perfil" />
         </div>

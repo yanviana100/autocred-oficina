@@ -256,7 +256,11 @@ export function useQuotes() {
         .single();
 
       const nextVal = (counter?.current_value ?? 0) + 1;
-      await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
+      if (counter) {
+        await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
+      } else {
+        await supabase.from("os_counter").insert({ id: 1, current_value: nextVal });
+      }
       const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
 
       const { data: os } = await supabase.from("service_orders").insert({
@@ -365,7 +369,11 @@ export function useServiceOrders() {
         .single();
 
       const nextVal = (counter?.current_value ?? 0) + 1;
-      await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
+      if (counter) {
+        await supabase.from("os_counter").update({ current_value: nextVal }).eq("id", 1);
+      } else {
+        await supabase.from("os_counter").insert({ id: 1, current_value: nextVal });
+      }
       const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
 
       const { data: row } = await supabase.from("service_orders").insert({

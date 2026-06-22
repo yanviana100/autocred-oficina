@@ -186,7 +186,6 @@ export default function ClientesPage() {
         for (const v of validVehicles) {
           await createVehicle({
             customerId: customer.id,
-            workshopId: customer.workshopId,
             plate: v.plate.trim().toUpperCase(),
             brand: v.brand,
             model: v.model.trim(),

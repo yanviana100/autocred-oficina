@@ -154,8 +154,6 @@ export default function RelatoriosPage() {
       }
 
       setLoading(false);
-    }
-    load();
   }, [dateFrom, dateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { load(); }, [load]);

@@ -68,7 +68,6 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
     setSavingVehicle(true);
     await createVehicle({
       customerId: id,
-      workshopId: customer.workshopId,
       plate: vForm.plate.trim().toUpperCase(),
       brand: vForm.brand,
       model: vForm.model.trim(),

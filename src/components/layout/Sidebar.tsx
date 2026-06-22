@@ -50,7 +50,6 @@ const plataformaItems: NavItem[] = [
   { href: "/parceiros", label: "Parceiros", icon: Building2 },
   { href: "/perfil", label: "Minha Oficina", icon: Store },
   { href: "/admin", label: "Admin", icon: Shield },
-  { href: "/investidor", label: "Para Investidores", icon: TrendingUp, amber: true },
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {

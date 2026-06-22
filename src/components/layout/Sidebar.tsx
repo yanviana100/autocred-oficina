@@ -30,15 +30,8 @@ import { getSupabase } from "@/lib/db";
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; amber?: boolean };
 
-const creditItems: NavItem[] = [
+const mainItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/fluxo", label: "Fluxo de Crédito", icon: GitBranch },
-  { href: "/pipeline", label: "Pipeline", icon: LayoutGrid },
-  { href: "/financiamento", label: "Solicitações", icon: CreditCard },
-  { href: "/simulador", label: "Simulador", icon: Calculator },
-];
-
-const gestaoItems: NavItem[] = [
   { href: "/agenda", label: "Agenda", icon: CalendarDays },
   { href: "/clientes", label: "Clientes", icon: Users },
   { href: "/veiculos", label: "Veículos", icon: Car },
@@ -144,8 +137,7 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 overflow-y-auto">
-        {renderSection("Crédito", creditItems)}
-        {renderSection("Gestão", gestaoItems)}
+        {renderSection("Menu", mainItems)}
         {renderSection("Plataforma", plataformaItems)}
       </nav>
 

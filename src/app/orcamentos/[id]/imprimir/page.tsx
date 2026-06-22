@@ -11,6 +11,7 @@ interface Workshop {
   whatsapp: string;
   city: string;
   state: string;
+  logo_url: string | null;
 }
 
 function formatDate(iso: string) {
@@ -31,7 +32,7 @@ export default function ImprimirOrcamentoPage({ params }: { params: Promise<{ id
 
       const [{ data: qData }, { data: wData }] = await Promise.all([
         supabase.from("quotes").select("*, quote_items(*)").eq("id", id).single(),
-        supabase.from("workshops").select("name,owner,cnpj,whatsapp,city,state").eq("id", workshopId).single(),
+        supabase.from("workshops").select("name,owner,cnpj,whatsapp,city,state,logo_url").eq("id", workshopId).single(),
       ]);
 
       if (qData) {
@@ -133,7 +134,12 @@ export default function ImprimirOrcamentoPage({ params }: { params: Promise<{ id
           <tbody>
             <tr>
               <td style={{ verticalAlign: "top" }}>
-                <div style={{ fontSize: "22px", fontWeight: 800, color: "#1e293b" }}>{workshop?.name ?? "Oficina"}</div>
+                {workshop?.logo_url ? (
+                  <img src={workshop.logo_url} alt="Logo" style={{ height: "56px", maxWidth: "180px", objectFit: "contain", marginBottom: "6px", display: "block" }} />
+                ) : (
+                  <div style={{ fontSize: "22px", fontWeight: 800, color: "#1e293b" }}>{workshop?.name ?? "Oficina"}</div>
+                )}
+                {workshop?.logo_url && <div style={{ fontSize: "13px", fontWeight: 700, color: "#1e293b" }}>{workshop.name}</div>}
                 {workshop?.cnpj && <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>CNPJ: {workshop.cnpj}</div>}
                 {(workshop?.city || workshop?.state) && (
                   <div style={{ fontSize: "11px", color: "#64748b" }}>{workshop.city}{workshop.city && workshop.state ? ", " : ""}{workshop.state}</div>

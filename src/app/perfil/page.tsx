@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Phone, Mail, MapPin, FileText, Save, CheckCircle, UserCog, Plus, Trash2 } from "lucide-react";
+import { Building2, Phone, Mail, MapPin, FileText, Save, CheckCircle, UserCog, Plus, Trash2, ImagePlus, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { getSupabase } from "@/lib/db";
 import { useToast } from "@/components/ui/toast";
@@ -25,24 +25,58 @@ export default function PerfilPage() {
   const [form, setForm] = useState({ name: "", owner: "", cnpj: "", whatsapp: "", email: "", city: "", state: "", plan: "starter" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     const supabase = getSupabase();
     supabase.from("workshops").select("*").eq("id", user.id).single().then(({ data }) => {
-      if (data) setForm({
-        name: data.name ?? "",
-        owner: data.owner ?? "",
-        cnpj: data.cnpj ?? "",
-        whatsapp: data.whatsapp ?? "",
-        email: data.email ?? "",
-        city: data.city ?? "",
-        state: data.state ?? "",
-        plan: data.plan ?? "starter",
-      });
+      if (data) {
+        setForm({
+          name: data.name ?? "",
+          owner: data.owner ?? "",
+          cnpj: data.cnpj ?? "",
+          whatsapp: data.whatsapp ?? "",
+          email: data.email ?? "",
+          city: data.city ?? "",
+          state: data.state ?? "",
+          plan: data.plan ?? "starter",
+        });
+        setLogoUrl(data.logo_url ?? null);
+      }
       setLoading(false);
     });
   }, [user]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) { toast("Imagem muito grande. Máximo 2MB.", "warning"); return; }
+    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type)) {
+      toast("Formato inválido. Use PNG, JPG, WEBP ou SVG.", "warning"); return;
+    }
+    setUploadingLogo(true);
+    const supabase = getSupabase();
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/logo.${ext}`;
+    const { error: upErr } = await supabase.storage.from("logos").upload(path, file, { upsert: true });
+    if (upErr) { toast("Erro ao enviar imagem.", "error"); setUploadingLogo(false); return; }
+    const { data: urlData } = supabase.storage.from("logos").getPublicUrl(path);
+    const url = urlData.publicUrl + `?t=${Date.now()}`;
+    await supabase.from("workshops").update({ logo_url: url }).eq("id", user.id);
+    setLogoUrl(url);
+    setUploadingLogo(false);
+    toast("Logo atualizada!");
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!user) return;
+    const supabase = getSupabase();
+    await supabase.from("workshops").update({ logo_url: null }).eq("id", user.id);
+    setLogoUrl(null);
+    toast("Logo removida.");
+  };
 
   const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -83,6 +117,40 @@ export default function PerfilPage() {
             <span className={`px-4 py-2 rounded-full text-sm font-bold ${planColor[form.plan] ?? ""}`}>
               {planLabel[form.plan] ?? form.plan}
             </span>
+          </CardContent>
+        </Card>
+
+        {/* Logo */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ImagePlus className="w-4 h-4 text-blue-600" /> Logo da Oficina
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center bg-slate-50 flex-shrink-0 overflow-hidden">
+                {logoUrl
+                  ? <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                  : <ImagePlus className="w-8 h-8 text-slate-300" />
+                }
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-slate-500">Aparece no cabeçalho dos orçamentos em PDF.<br />PNG, JPG ou SVG · Máximo 2MB.</p>
+                <div className="flex gap-2">
+                  <label className={`cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${uploadingLogo ? "opacity-50 cursor-not-allowed" : "hover:bg-slate-50 border-slate-200 text-slate-700"}`}>
+                    <ImagePlus className="w-3.5 h-3.5" />
+                    {uploadingLogo ? "Enviando..." : logoUrl ? "Trocar logo" : "Enviar logo"}
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                  </label>
+                  {logoUrl && (
+                    <button onClick={handleRemoveLogo} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 border border-red-200 transition-colors">
+                      <X className="w-3.5 h-3.5" /> Remover
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

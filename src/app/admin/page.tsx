@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Building2, Users, ClipboardList, FileText, Search,
-  ShieldOff, Shield, TrendingUp, RefreshCw, AlertTriangle,
+  ShieldOff, Shield, TrendingUp, RefreshCw, AlertTriangle, Eye,
 } from "lucide-react";
+import Link from "next/link";
 import { getSupabase } from "@/lib/db";
 import { formatDate, formatCurrency, planLabel, planColor } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -135,7 +136,7 @@ export default function AdminPage() {
               <p className="text-sm text-slate-500 mb-6">Reativar acesso de <strong>{confirmAction.name}</strong>?</p>
             )}
             {confirmAction.type === "plan" && (
-              <p className="text-sm text-slate-500 mb-6">Alterar plano de <strong>{confirmAction.name}</strong> para <strong>{planLabel[confirmAction.plan ?? ""] ?? confirmAction.plan}</strong>?</p>
+              <p className="text-sm text-slate-500 mb-6">Alterar plano de <strong>{confirmAction.name}</strong> para <strong>{(planLabel as Record<string, string>)[confirmAction.plan ?? ""] ?? confirmAction.plan}</strong>?</p>
             )}
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirmAction(null)}>Cancelar</Button>
@@ -244,7 +245,7 @@ export default function AdminPage() {
                               value={w.plan}
                               disabled={!!actionLoading}
                               onChange={(e) => setConfirmAction({ id: w.id, name: w.name, type: "plan", plan: e.target.value })}
-                              className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${planColor[w.plan] ?? "bg-slate-100 text-slate-700"}`}
+                              className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${(planColor as Record<string, string>)[w.plan] ?? "bg-slate-100 text-slate-700"}`}
                             >
                               <option value="starter">Starter</option>
                               <option value="pro">Pro</option>
@@ -267,23 +268,31 @@ export default function AdminPage() {
                           <td className="px-4 py-3 text-center text-slate-500">{w.os_count}</td>
                           <td className="px-4 py-3 text-xs text-slate-400">{formatDate(w.created_at)}</td>
                           <td className="px-4 py-3">
-                            {isSuspended ? (
-                              <button
-                                onClick={() => setConfirmAction({ id: w.id, name: w.name, type: "reactivate" })}
-                                disabled={!!actionLoading}
-                                className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                            <div className="flex items-center gap-3">
+                              <Link
+                                href={`/admin/oficina/${w.id}`}
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
                               >
-                                <Shield className="w-3.5 h-3.5" /> Reativar
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setConfirmAction({ id: w.id, name: w.name, type: "suspend" })}
-                                disabled={!!actionLoading}
-                                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium"
-                              >
-                                <ShieldOff className="w-3.5 h-3.5" /> Suspender
-                              </button>
-                            )}
+                                <Eye className="w-3.5 h-3.5" /> Ver
+                              </Link>
+                              {isSuspended ? (
+                                <button
+                                  onClick={() => setConfirmAction({ id: w.id, name: w.name, type: "reactivate" })}
+                                  disabled={!!actionLoading}
+                                  className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                                >
+                                  <Shield className="w-3.5 h-3.5" /> Reativar
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmAction({ id: w.id, name: w.name, type: "suspend" })}
+                                  disabled={!!actionLoading}
+                                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium"
+                                >
+                                  <ShieldOff className="w-3.5 h-3.5" /> Suspender
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );

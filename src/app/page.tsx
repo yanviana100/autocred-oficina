@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   ClipboardList, DollarSign, BarChart2, Car, FileText, Users,
   CheckCircle, ArrowRight, Menu, X, Wrench, Clock, TrendingUp,
@@ -50,6 +50,80 @@ const CHECKLIST = [
   "Cadastro de técnicos",
   "Suporte via WhatsApp",
 ];
+
+function Calculator({ waUrl }: { waUrl: string }) {
+  const [os, setOs] = useState(30);
+  const [ticket, setTicket] = useState(350);
+  const [perda, setPerda] = useState(15);
+
+  const perdaMensal = Math.round((os * perda) / 100 * ticket);
+  const perdaAnual = perdaMensal * 12;
+  const custoSistema = 197;
+  const roi = perdaMensal - custoSistema;
+
+  return (
+    <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div>
+          <div className="flex justify-between mb-2">
+            <label className="text-sm font-semibold text-slate-700">OS por mês</label>
+            <span className="text-sm font-bold text-blue-600">{os}</span>
+          </div>
+          <input type="range" min={5} max={200} step={5} value={os} onChange={(e) => setOs(Number(e.target.value))}
+            className="w-full accent-blue-600" />
+          <div className="flex justify-between text-xs text-slate-400 mt-1"><span>5</span><span>200</span></div>
+        </div>
+        <div>
+          <div className="flex justify-between mb-2">
+            <label className="text-sm font-semibold text-slate-700">Ticket médio da OS</label>
+            <span className="text-sm font-bold text-blue-600">R${ticket}</span>
+          </div>
+          <input type="range" min={100} max={2000} step={50} value={ticket} onChange={(e) => setTicket(Number(e.target.value))}
+            className="w-full accent-blue-600" />
+          <div className="flex justify-between text-xs text-slate-400 mt-1"><span>R$100</span><span>R$2.000</span></div>
+        </div>
+        <div>
+          <div className="flex justify-between mb-2">
+            <label className="text-sm font-semibold text-slate-700">OS perdidas por desorganização</label>
+            <span className="text-sm font-bold text-red-500">{perda}%</span>
+          </div>
+          <input type="range" min={5} max={40} step={5} value={perda} onChange={(e) => setPerda(Number(e.target.value))}
+            className="w-full accent-red-500" />
+          <div className="flex justify-between text-xs text-slate-400 mt-1"><span>5%</span><span>40%</span></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
+          <p className="text-xs text-red-500 font-semibold uppercase tracking-wide mb-1">Perda mensal estimada</p>
+          <p className="text-3xl font-black text-red-600">R${perdaMensal.toLocaleString("pt-BR")}</p>
+        </div>
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
+          <p className="text-xs text-red-500 font-semibold uppercase tracking-wide mb-1">Perda anual estimada</p>
+          <p className="text-3xl font-black text-red-600">R${perdaAnual.toLocaleString("pt-BR")}</p>
+        </div>
+        <div className={`rounded-2xl p-5 text-center border ${roi > 0 ? "bg-emerald-50 border-emerald-100" : "bg-slate-100 border-slate-200"}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${roi > 0 ? "text-emerald-600" : "text-slate-500"}`}>ROI com OficinaPro</p>
+          <p className={`text-3xl font-black ${roi > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+            {roi > 0 ? `+R$${roi.toLocaleString("pt-BR")}/mês` : "—"}
+          </p>
+        </div>
+      </div>
+
+      {roi > 0 && (
+        <div className="text-center">
+          <p className="text-slate-500 text-sm mb-4">
+            O sistema custa <strong>R$197/mês</strong> e pode recuperar <strong>R${perdaMensal.toLocaleString("pt-BR")}/mês</strong> em receita perdida.
+          </p>
+          <a href={waUrl} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-xl transition-all hover:scale-105 text-sm">
+            Quero recuperar essa receita <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -226,6 +300,19 @@ export default function LandingPage() {
               Quero agendar minha demo <ArrowRight className="w-5 h-5" />
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* CALCULADORA */}
+      <section className="py-20 px-4 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              Quanto sua oficina está perdendo por mês?
+            </h2>
+            <p className="text-slate-500 text-lg">Ajuste os números abaixo e veja o impacto real.</p>
+          </div>
+          <Calculator waUrl={waUrl} />
         </div>
       </section>
 

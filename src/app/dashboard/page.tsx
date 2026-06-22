@@ -46,23 +46,29 @@ function Kpi({ title, value, sub, icon: Icon, color }: {
 }
 
 // Onboarding checklist
-function OnboardingChecklist({ hasCustomers, hasVehicles, hasQuotes }: { hasCustomers: boolean; hasVehicles: boolean; hasQuotes: boolean }) {
-  const done = [hasCustomers, hasVehicles, hasQuotes].filter(Boolean).length;
-  if (done === 3) return null;
+function OnboardingChecklist({ hasCustomers, hasVehicles, hasQuotes, hasOrders, hasProfile }: {
+  hasCustomers: boolean; hasVehicles: boolean; hasQuotes: boolean; hasOrders: boolean; hasProfile: boolean;
+}) {
+  const steps = [hasCustomers, hasVehicles, hasOrders, hasQuotes, hasProfile];
+  const done = steps.filter(Boolean).length;
+  const total = steps.length;
+  if (done === total) return null;
   return (
     <Card className="border-blue-200 bg-blue-50">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
-          <p className="font-semibold text-blue-900">Primeiros passos ({done}/3)</p>
-          <span className="text-xs text-blue-600 font-medium">{Math.round((done / 3) * 100)}% concluído</span>
+          <p className="font-semibold text-blue-900">Configure sua oficina ({done}/{total})</p>
+          <span className="text-xs text-blue-600 font-medium">{Math.round((done / total) * 100)}% concluído</span>
         </div>
         <div className="w-full h-1.5 bg-blue-200 rounded-full mb-4">
-          <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${(done / 3) * 100}%` }} />
+          <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${(done / total) * 100}%` }} />
         </div>
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ChecklistItem done={hasCustomers} label="Cadastre seu primeiro cliente" href="/clientes" />
           <ChecklistItem done={hasVehicles} label="Adicione um veículo" href="/veiculos" />
-          <ChecklistItem done={hasQuotes} label="Crie seu primeiro orçamento" href="/orcamentos/novo" />
+          <ChecklistItem done={hasOrders} label="Crie uma ordem de serviço" href="/ordens/nova" />
+          <ChecklistItem done={hasQuotes} label="Envie seu primeiro orçamento" href="/orcamentos/novo" />
+          <ChecklistItem done={hasProfile} label="Complete o perfil da oficina" href="/perfil" />
         </div>
       </CardContent>
     </Card>
@@ -150,6 +156,8 @@ export default function DashboardPage() {
           hasCustomers={metrics.totalCustomers > 0}
           hasVehicles={metrics.totalVehicles > 0}
           hasQuotes={quotes.length > 0}
+          hasOrders={orders.length > 0}
+          hasProfile={!!metrics.totalCustomers}
         />
       </div>
 

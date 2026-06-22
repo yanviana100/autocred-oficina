@@ -258,6 +258,11 @@ export default function ImprimirOrcamentoPage({ params }: { params: Promise<{ id
           Orçamento gerado em {formatDate(quote.createdAt)} · {workshop?.name} · {workshop?.city}{workshop?.state ? `, ${workshop.state}` : ""}
           {" · Orçamento válido por 7 dias"}
         </div>
+
+        {/* Co-branding */}
+        <div style={{ marginTop: "10px", textAlign: "center", fontSize: "9px", color: "#cbd5e1" }}>
+          Gerado por <span style={{ fontWeight: 600, color: "#94a3b8" }}>OficinaPro</span> · Sistema de gestão para oficinas mecânicas · oficinaPro.com.br
+        </div>
       </div>
     </>
   );

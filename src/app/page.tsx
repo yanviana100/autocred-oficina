@@ -9,7 +9,7 @@ import {
 
 const NAV_LINKS = [
   { label: "Funcionalidades", href: "#funcionalidades" },
-  { label: "Como funciona", href: "#como-funciona" },
+  { label: "Planos", href: "#planos" },
   { label: "Depoimentos", href: "#depoimentos" },
 ];
 
@@ -225,6 +225,88 @@ export default function LandingPage() {
             >
               Quero agendar minha demo <ArrowRight className="w-5 h-5" />
             </a>
+          </div>
+        </div>
+      </section>
+
+      {/* PLANOS */}
+      <section id="planos" className="py-20 px-4 bg-slate-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-4">
+              <span className="text-blue-600 text-sm font-medium">Primeiros 50 clientes — preço de fundador</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Planos simples, sem surpresa</h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">Sem fidelidade. Cancele quando quiser. Garantia de 30 dias.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Starter */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-7 flex flex-col">
+              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Starter</p>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-black text-slate-900">R$197</span>
+                <span className="text-slate-400 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-6">1 usuário · até 100 clientes</p>
+              <ul className="space-y-2.5 mb-8 flex-1">
+                {["Ordens de serviço ilimitadas", "Orçamentos em PDF", "Controle de pagamentos", "Histórico de veículos", "Gestão de clientes"].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                Começar grátis 14 dias
+              </a>
+            </div>
+
+            {/* Pro — destaque */}
+            <div className="bg-blue-600 rounded-2xl p-7 flex flex-col relative shadow-xl shadow-blue-600/30">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-bold px-3 py-1 rounded-full">MAIS POPULAR</div>
+              <p className="text-sm font-semibold text-blue-200 uppercase tracking-wider mb-2">Pro</p>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-black text-white">R$347</span>
+                <span className="text-blue-200 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-blue-200 mb-6">3 usuários · clientes ilimitados</p>
+              <ul className="space-y-2.5 mb-8 flex-1">
+                {["Tudo do Starter", "WhatsApp automático para clientes", "Relatórios avançados", "Clientes inativos com 1 clique", "Suporte prioritário"].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-white">
+                    <CheckCircle className="w-4 h-4 text-blue-200 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-white hover:bg-blue-50 text-blue-600 font-bold py-3 rounded-xl transition-colors text-sm">
+                Começar grátis 14 dias
+              </a>
+            </div>
+
+            {/* Premium */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-7 flex flex-col">
+              <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Premium</p>
+              <div className="flex items-end gap-1 mb-1">
+                <span className="text-4xl font-black text-slate-900">R$597</span>
+                <span className="text-slate-400 mb-1">/mês</span>
+              </div>
+              <p className="text-xs text-slate-400 mb-6">Usuários ilimitados</p>
+              <ul className="space-y-2.5 mb-8 flex-1">
+                {["Tudo do Pro", "Emissão de NFS-e", "Controle de estoque de peças", "API para integrações", "Gerente de conta dedicado"].map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" /> {f}
+                  </li>
+                ))}
+              </ul>
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                Começar grátis 14 dias
+              </a>
+            </div>
+          </div>
+
+          {/* Garantia */}
+          <div className="mt-10 text-center flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-slate-500">
+            <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> 14 dias grátis, sem cartão</span>
+            <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Cancele quando quiser</span>
+            <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-emerald-500" /> Garantia de 30 dias ou devolvemos</span>
           </div>
         </div>
       </section>

@@ -66,7 +66,7 @@ export default function CadastroPage() {
     setSuccess(true);
     setLoading(false);
 
-    setTimeout(() => router.push("/onboarding"), 2000);
+    setTimeout(() => router.push("/dashboard"), 2000);
   };
 
   if (success) {

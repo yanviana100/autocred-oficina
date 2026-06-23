@@ -46,49 +46,61 @@ function Kpi({ title, value, sub, icon: Icon, color }: {
 }
 
 // Onboarding checklist
+const CHECKLIST_STEPS = [
+  { label: "Complete o perfil da oficina", sub: "Nome, WhatsApp e logo — aparecem nos orçamentos", href: "/perfil", key: "profile" },
+  { label: "Cadastre seu primeiro cliente", sub: "Nome e telefone para vincular OS e orçamentos", href: "/clientes", key: "customers" },
+  { label: "Adicione um veículo", sub: "Placa, marca e modelo do carro do cliente", href: "/veiculos", key: "vehicles" },
+  { label: "Crie um orçamento", sub: "Envie o link pro cliente aprovar pelo celular", href: "/orcamentos/novo", key: "quotes" },
+  { label: "Abra sua primeira OS", sub: "Registre o serviço e acompanhe até a entrega", href: "/ordens", key: "orders" },
+];
+
 function OnboardingChecklist({ hasCustomers, hasVehicles, hasQuotes, hasOrders, hasProfile }: {
   hasCustomers: boolean; hasVehicles: boolean; hasQuotes: boolean; hasOrders: boolean; hasProfile: boolean;
 }) {
-  const steps = [hasCustomers, hasVehicles, hasOrders, hasQuotes, hasProfile];
-  const done = steps.filter(Boolean).length;
-  const total = steps.length;
+  const doneMap: Record<string, boolean> = { profile: hasProfile, customers: hasCustomers, vehicles: hasVehicles, quotes: hasQuotes, orders: hasOrders };
+  const done = Object.values(doneMap).filter(Boolean).length;
+  const total = CHECKLIST_STEPS.length;
   if (done === total) return null;
+
+  const nextIdx = CHECKLIST_STEPS.findIndex((s) => !doneMap[s.key]);
+
   return (
-    <Card className="border-blue-200 bg-blue-50">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-semibold text-blue-900">Configure sua oficina ({done}/{total})</p>
-          <span className="text-xs text-blue-600 font-medium">{Math.round((done / total) * 100)}% concluído</span>
+    <Card className="border-0 shadow-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="font-bold text-white">Primeiros passos</p>
+          <span className="text-blue-200 text-sm font-medium">{done} de {total} concluídos</span>
         </div>
-        <div className="w-full h-1.5 bg-blue-200 rounded-full mb-4">
-          <div className="h-full bg-blue-600 rounded-full transition-all" style={{ width: `${(done / total) * 100}%` }} />
+        <div className="w-full h-1.5 bg-blue-800/50 rounded-full">
+          <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${(done / total) * 100}%` }} />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <ChecklistItem done={hasCustomers} label="Cadastre seu primeiro cliente" href="/clientes" />
-          <ChecklistItem done={hasVehicles} label="Adicione um veículo" href="/veiculos" />
-          <ChecklistItem done={hasOrders} label="Crie uma ordem de serviço" href="/ordens" />
-          <ChecklistItem done={hasQuotes} label="Envie seu primeiro orçamento" href="/orcamentos/novo" />
-          <ChecklistItem done={hasProfile} label="Complete o perfil da oficina" href="/perfil" />
-        </div>
+      </div>
+      <CardContent className="p-0 divide-y divide-slate-100">
+        {CHECKLIST_STEPS.map((step, i) => {
+          const isDone = doneMap[step.key];
+          const isNext = i === nextIdx;
+          return (
+            <div key={step.key} className={`flex items-center gap-4 px-5 py-3.5 transition-colors ${isNext ? "bg-blue-50" : isDone ? "bg-white" : "bg-white opacity-50"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${isDone ? "bg-emerald-500" : isNext ? "bg-blue-600" : "bg-slate-200"}`}>
+                {isDone ? <CheckCircle className="w-4 h-4 text-white" /> : <span className={isNext ? "text-white" : "text-slate-400"}>{i + 1}</span>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${isDone ? "text-slate-400 line-through" : isNext ? "text-slate-900" : "text-slate-500"}`}>{step.label}</p>
+                {!isDone && <p className="text-xs text-slate-400 mt-0.5">{step.sub}</p>}
+              </div>
+              {isNext && (
+                <Link href={step.href}>
+                  <button className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                    Fazer agora <ArrowRight className="w-3 h-3" />
+                  </button>
+                </Link>
+              )}
+              {isDone && <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
-  );
-}
-
-function ChecklistItem({ done, label, href }: { done: boolean; label: string; href: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${done ? "bg-emerald-500" : "border-2 border-blue-300"}`}>
-        {done && <CheckCircle className="w-3 h-3 text-white" />}
-      </div>
-      {done ? (
-        <span className="text-sm text-slate-500 line-through">{label}</span>
-      ) : (
-        <Link href={href} className="text-sm text-blue-700 font-medium hover:underline flex items-center gap-1">
-          {label} <ArrowRight className="w-3 h-3" />
-        </Link>
-      )}
-    </div>
   );
 }
 

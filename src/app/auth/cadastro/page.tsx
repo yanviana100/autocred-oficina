@@ -212,6 +212,12 @@ export default function CadastroPage() {
               Entrar
             </Link>
           </p>
+          <p className="text-center text-xs text-slate-500 mt-4">
+            Ao criar uma conta, você concorda com os{" "}
+            <Link href="/termos" className="underline hover:text-slate-400">Termos de Uso</Link>
+            {" "}e a{" "}
+            <Link href="/privacidade" className="underline hover:text-slate-400">Política de Privacidade</Link>.
+          </p>
         </div>
       </div>
     </div>

@@ -474,8 +474,9 @@ export default function LandingPage() {
           </div>
           <p className="text-slate-500 text-sm">© 2026 OficinaPro. Todos os direitos reservados.</p>
           <div className="flex gap-6">
+            <Link href="/termos" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Termos de Uso</Link>
+            <Link href="/privacidade" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Privacidade</Link>
             <Link href="/auth/login" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Entrar</Link>
-            <Link href="/auth/cadastro" className="text-slate-500 hover:text-slate-300 text-sm transition-colors">Cadastrar</Link>
           </div>
         </div>
       </footer>

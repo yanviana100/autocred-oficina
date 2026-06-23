@@ -162,11 +162,12 @@ export default function OnboardingPage() {
     setLoading(true); setError("");
     const workshopId = await getWorkshopId();
     const supabase = getSupabase();
-    await supabase.from("workshops").update({
+    await supabase.from("workshops").upsert({
+      id: workshopId!,
       name: workshopName.trim(),
       whatsapp: workshopWhatsapp.trim() || null,
       city: workshopCity.trim() || null,
-    }).eq("id", workshopId!);
+    }, { onConflict: "id" });
     setLoading(false);
     setStep(2);
   };

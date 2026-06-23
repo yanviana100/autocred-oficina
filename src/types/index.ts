@@ -139,6 +139,8 @@ export interface Quote {
   status: QuoteStatus;
   createdAt: string;
   publicToken: string;
+  signedBy?: string | null;
+  signedAt?: string | null;
 }
 
 export interface FinancingRequest {

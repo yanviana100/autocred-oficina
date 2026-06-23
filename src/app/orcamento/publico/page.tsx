@@ -1,7 +1,7 @@
 "use client";
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { Wrench, Car, CheckCircle, CreditCard, Phone, AlertTriangle } from "lucide-react";
+import { Wrench, Car, CheckCircle, CreditCard, Phone, AlertTriangle, PenLine, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,10 @@ function OrcamentoPublicoContent() {
   const [showInterest, setShowInterest] = useState(false);
   const [downPayment, setDownPayment] = useState(0);
   const [installments, setInstallments] = useState(12);
+  const [signerName, setSignerName] = useState("");
+  const [signing, setSigning] = useState(false);
+  const [signed, setSigned] = useState(false);
+  const [signError, setSignError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -41,6 +45,23 @@ function OrcamentoPublicoContent() {
     }
     load();
   }, [token]);
+
+  const handleSign = async () => {
+    if (!signerName.trim()) { setSignError("Digite seu nome completo para assinar."); return; }
+    if (!token) return;
+    setSigning(true);
+    setSignError("");
+    const supabase = getSupabase();
+    const { data } = await supabase.rpc("sign_quote_by_token", {
+      p_token: token,
+      p_signed_by: signerName.trim(),
+    });
+    setSigning(false);
+    if (data?.error === "already_approved") { setSignError("Este orçamento já foi aprovado."); return; }
+    if (data?.error === "already_signed") { setSignError("Este orçamento já foi assinado."); return; }
+    if (data?.success) { setSigned(true); return; }
+    setSignError("Erro ao registrar assinatura. Tente novamente.");
+  };
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-slate-500">Carregando orçamento...</div>;
@@ -195,6 +216,59 @@ function OrcamentoPublicoContent() {
           </div>
         )}
 
+        {/* Bloco de assinatura digital */}
+        {["enviado", "aguardando_aprovacao"].includes(status) && !signed && !(quote["signed_at"] as string | null) && (
+          <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <PenLine className="w-5 h-5 text-blue-600" />
+              <h2 className="font-bold text-slate-900">Aprovar orçamento</h2>
+            </div>
+            <p className="text-sm text-slate-500 mb-5">
+              Digite seu nome completo abaixo para confirmar a aprovação deste orçamento. A oficina receberá sua confirmação e entrará em contato.
+            </p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Nome completo *</Label>
+                <Input
+                  placeholder="Ex: João da Silva"
+                  value={signerName}
+                  onChange={(e) => { setSignerName(e.target.value); setSignError(""); }}
+                  disabled={signing}
+                  className="text-base"
+                />
+              </div>
+              {signError && <p className="text-sm text-red-500">{signError}</p>}
+              <Button
+                className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+                onClick={handleSign}
+                disabled={signing || !signerName.trim()}
+              >
+                {signing ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Registrando...</>
+                ) : (
+                  <><PenLine className="w-4 h-4" />Assinar e aprovar orçamento</>
+                )}
+              </Button>
+              <div className="flex items-center gap-1.5 justify-center text-xs text-slate-400">
+                <Lock className="w-3 h-3" /> Sua assinatura é registrada com data, hora e IP
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Orçamento já assinado */}
+        {(signed || ((quote["signed_at"] as string | null) && ["aguardando_aprovacao", "aprovado"].includes(status))) && (
+          <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-6 text-center">
+            <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+            <h2 className="font-bold text-emerald-900 text-lg mb-1">Orçamento aprovado!</h2>
+            <p className="text-sm text-emerald-700">
+              {signed
+                ? "Sua aprovação foi registrada. A oficina entrará em contato em breve."
+                : `Assinado por ${String(quote["signed_by"] ?? "")}. A oficina já foi notificada.`}
+            </p>
+          </div>
+        )}
+
         {!!workshop?.whatsapp && (
           <div className="bg-white rounded-2xl shadow-sm border p-5 text-center">
             <p className="text-sm text-slate-600 mb-3">Dúvidas? Fale com a oficina:</p>
@@ -209,7 +283,7 @@ function OrcamentoPublicoContent() {
         )}
 
         <p className="text-center text-xs text-slate-400 pb-6">
-          AutoCred Oficina © 2024 · Esta plataforma não realiza operações financeiras. Simulações são apenas estimativas e não representam oferta de crédito.
+          OficinaPro · Esta plataforma não realiza operações financeiras. Simulações são apenas estimativas e não representam oferta de crédito.
         </p>
       </main>
     </div>

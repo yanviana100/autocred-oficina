@@ -630,6 +630,8 @@ function dbToQuote(row: any): Quote {
     status: row.status ?? "rascunho",
     publicToken: row.public_token ?? "",
     createdAt: row.created_at?.split("T")[0] ?? "",
+    signedBy: row.signed_by ?? null,
+    signedAt: row.signed_at ?? null,
     items: (row.quote_items ?? []).map(dbToQuoteItem),
   };
 }

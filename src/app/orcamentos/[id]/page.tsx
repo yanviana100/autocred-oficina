@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy, Printer, Pencil, Trash2, Plus, Save, X } from "lucide-react";
+import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy, Printer, Pencil, Trash2, Plus, Save, X, PenLine } from "lucide-react";
 import { useQuotes } from "@/hooks/useStore";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
@@ -143,7 +143,13 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
                     <p className="text-sm text-slate-500">{quote.vehicleInfo}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {quote.signedBy && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <PenLine className="w-3 h-3" />
+                      Assinado por {quote.signedBy}
+                    </span>
+                  )}
                   <span className={`px-3 py-1 rounded-full text-sm font-semibold ${quoteStatusColor[quote.status]}`}>
                     {quoteStatusLabel[quote.status]}
                   </span>

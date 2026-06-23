@@ -184,7 +184,7 @@ export default function OnboardingPage() {
       phone: clientPhone.trim() || null,
     }).select("id").single();
     setLoading(false);
-    if (err || !data) { setError("Erro ao salvar cliente. Tente novamente."); return; }
+    if (err || !data) { setError(`Erro: ${err?.message ?? "sem dados retornados"}`); return; }
     setCustomerId(data.id);
     setStep(3);
   };

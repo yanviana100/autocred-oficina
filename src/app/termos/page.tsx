@@ -67,7 +67,7 @@ export default function TermosPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-3">10. Contato</h2>
-            <p>Dúvidas sobre estes Termos podem ser enviadas para: <strong>contato@oficinaPro.com.br</strong></p>
+            <p>Dúvidas sobre estes Termos podem ser enviadas pelo nosso <strong>canal oficial de atendimento (em implantação)</strong>.</p>
           </section>
         </div>
       </div>

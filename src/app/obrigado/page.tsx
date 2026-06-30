@@ -2,9 +2,6 @@
 import Link from "next/link";
 import { CheckCircle, ArrowRight, Wrench } from "lucide-react";
 
-const WHATSAPP = "5511999999999";
-const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent("Olá! Acabei de me cadastrar no OficinaPro e gostaria de agendar a configuração.")}`;
-
 export default function ObrigadoPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center px-4 text-center">
@@ -30,26 +27,15 @@ export default function ObrigadoPage() {
         </p>
 
         {/* CTA principal */}
-        <div className="bg-blue-600 rounded-2xl p-6 mb-6 text-left">
-          <p className="text-white font-semibold mb-2">Quer configurar tudo agora com a gente?</p>
-          <p className="text-blue-200 text-sm mb-4">Em 20 minutos pelo WhatsApp, sua oficina já está no sistema com os primeiros dados cadastrados.</p>
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-white text-blue-600 font-bold py-3 rounded-xl hover:bg-blue-50 transition-colors text-sm"
-          >
-            Agendar configuração agora <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-
-        {/* CTA secundário */}
         <Link
           href="/dashboard"
-          className="flex items-center justify-center gap-2 text-slate-400 hover:text-white transition-colors text-sm py-3"
+          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl transition-colors text-base"
         >
-          Prefiro explorar sozinho por agora <ArrowRight className="w-4 h-4" />
+          Ir para o sistema <ArrowRight className="w-5 h-5" />
         </Link>
+        <p className="text-slate-500 text-sm mt-4">
+          Comece cadastrando seu primeiro cliente — o sistema te guia passo a passo.
+        </p>
       </div>
     </div>
   );

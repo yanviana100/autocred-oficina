@@ -15,7 +15,7 @@ export default function PrivacidadePage() {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-3">1. Quem somos</h2>
             <p><strong>Controlador dos dados:</strong> OficinaPro Tecnologia<br />
-            <strong>E-mail do encarregado (DPO):</strong> privacidade@oficinaPro.com.br</p>
+            <strong>Encarregado de dados (DPO):</strong> canal oficial em implantação</p>
           </section>
 
           <section>
@@ -106,7 +106,7 @@ export default function PrivacidadePage() {
               <li><strong>Revogação do consentimento</strong> — para as finalidades baseadas em consentimento</li>
               <li><strong>Oposição</strong> — contestar tratamentos baseados em legítimo interesse</li>
             </ul>
-            <p className="mt-3">Para exercer qualquer desses direitos, envie e-mail para <strong>privacidade@oficinaPro.com.br</strong>. Respondemos em até 15 dias úteis.</p>
+            <p className="mt-3">Para exercer qualquer desses direitos, utilize nosso canal oficial de atendimento (em implantação). Respondemos em até 15 dias úteis.</p>
           </section>
 
           <section>
@@ -127,7 +127,7 @@ export default function PrivacidadePage() {
           <section>
             <h2 className="text-xl font-semibold text-slate-900 mb-3">10. Contato e encarregado (DPO)</h2>
             <p>Para dúvidas, solicitações ou reclamações relacionadas à privacidade:<br />
-            <strong>E-mail:</strong> privacidade@oficinaPro.com.br<br />
+            <strong>Canal de atendimento:</strong> canal oficial em implantação<br />
             Você também pode registrar reclamações junto à <strong>ANPD</strong> (Autoridade Nacional de Proteção de Dados): <a href="https://www.gov.br/anpd" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">www.gov.br/anpd</a></p>
           </section>
         </div>

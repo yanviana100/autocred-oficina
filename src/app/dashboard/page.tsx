@@ -21,7 +21,7 @@ const colorMap: Record<KpiColor, string> = {
 };
 
 const planLabel: Record<string, string> = { starter: "Starter", pro: "Pro", premium: "Premium" };
-const planPrice: Record<string, string> = { starter: "R$150/mês", pro: "R$250/mês", premium: "R$399/mês" };
+const planPrice: Record<string, string> = { starter: "R$197/mês", pro: "R$347/mês", premium: "R$597/mês" };
 const planColor: Record<string, string> = { starter: "bg-slate-100 text-slate-600", pro: "bg-blue-50 text-blue-600", premium: "bg-amber-50 text-amber-600" };
 
 function Kpi({ title, value, sub, icon: Icon, color }: {

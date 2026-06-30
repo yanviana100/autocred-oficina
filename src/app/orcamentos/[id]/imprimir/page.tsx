@@ -268,7 +268,7 @@ export default function ImprimirOrcamentoPage() {
 
         {/* Co-branding */}
         <div style={{ marginTop: "10px", textAlign: "center", fontSize: "9px", color: "#cbd5e1" }}>
-          Gerado por <span style={{ fontWeight: 600, color: "#94a3b8" }}>OficinaPro</span> · Sistema de gestão para oficinas mecânicas · oficinaPro.com.br
+          Gerado por <span style={{ fontWeight: 600, color: "#94a3b8" }}>OficinaPro</span> · Sistema de gestão para oficinas mecânicas
         </div>
       </div>
     </>

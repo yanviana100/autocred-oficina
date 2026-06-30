@@ -29,15 +29,15 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { n: "01", title: "Agende uma demo", desc: "Você fala com a gente pelo WhatsApp. Mostramos o sistema ao vivo em 20 minutos." },
-  { n: "02", title: "Configuramos para você", desc: "Em menos de 1 hora sua oficina já está no sistema com os primeiros dados cadastrados." },
+  { n: "01", title: "Crie sua conta grátis", desc: "Cadastro em menos de 2 minutos. 14 dias de teste, sem cartão de crédito." },
+  { n: "02", title: "Configure sua oficina", desc: "Cadastre seus primeiros clientes e veículos. O sistema te guia passo a passo." },
   { n: "03", title: "Comece a usar", desc: "Crie sua primeira OS no mesmo dia. Sua equipe aprende em minutos — sem treinamento longo." },
 ];
 
 const TRUST_BADGES = [
   { icon: Shield, title: "Seus dados protegidos", desc: "Cada oficina acessa apenas os próprios dados. Conformidade total com a LGPD." },
   { icon: Zap, title: "Configuração em 1 hora", desc: "Sua oficina no sistema no mesmo dia, com seus primeiros dados já cadastrados." },
-  { icon: Users, title: "Suporte humano por WhatsApp", desc: "Fale com gente de verdade quando precisar. Sem robô, sem ticket esquecido." },
+  { icon: Users, title: "Suporte humano de verdade", desc: "Fale com gente de verdade quando precisar. Sem robô, sem ticket esquecido." },
 ];
 
 const CHECKLIST = [
@@ -48,10 +48,10 @@ const CHECKLIST = [
   "Relatórios financeiros",
   "Gestão de clientes e veículos",
   "Cadastro de técnicos",
-  "Suporte via WhatsApp",
+  "Suporte ao cliente",
 ];
 
-function Calculator({ waUrl }: { waUrl: string }) {
+function Calculator({ ctaUrl }: { ctaUrl: string }) {
   const [os, setOs] = useState(30);
   const [ticket, setTicket] = useState(350);
   const [perda, setPerda] = useState(15);
@@ -115,7 +115,7 @@ function Calculator({ waUrl }: { waUrl: string }) {
           <p className="text-slate-500 text-sm mb-4">
             O sistema custa <strong>R$197/mês</strong> e pode recuperar <strong>R${perdaMensal.toLocaleString("pt-BR")}/mês</strong> em receita perdida.
           </p>
-          <a href={waUrl} target="_blank" rel="noopener noreferrer"
+          <a href={ctaUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-xl transition-all hover:scale-105 text-sm">
             Quero recuperar essa receita <ArrowRight className="w-4 h-4" />
           </a>
@@ -127,8 +127,8 @@ function Calculator({ waUrl }: { waUrl: string }) {
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const WHATSAPP = "5511999999999"; // substituir pelo número real
-  const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent("Olá! Quero agendar uma demo do OficinaPro.")}`;
+  // Canal de contato direto ainda em implantação — CTAs levam ao cadastro (teste grátis).
+  const ctaUrl = "/auth/cadastro";
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
@@ -149,8 +149,8 @@ export default function LandingPage() {
           </div>
           <div className="hidden md:flex items-center gap-3">
             <Link href="/auth/login" className="text-sm text-slate-600 hover:text-slate-900">Entrar</Link>
-            <a href={waUrl} target="_blank" rel="noopener noreferrer" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-              Agendar demo
+            <a href={ctaUrl} className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+              Começar grátis
             </a>
           </div>
           <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
@@ -162,8 +162,8 @@ export default function LandingPage() {
             {NAV_LINKS.map((l) => (
               <a key={l.label} href={l.href} className="block text-sm text-slate-600 py-1" onClick={() => setMenuOpen(false)}>{l.label}</a>
             ))}
-            <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg text-center mt-2">
-              Agendar demo gratuita
+            <a href={ctaUrl} className="block bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-lg text-center mt-2">
+              Começar grátis
             </a>
           </div>
         )}
@@ -185,12 +185,12 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href={waUrl}
+              href={ctaUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-xl text-base transition-all hover:scale-105 shadow-lg shadow-blue-600/30"
             >
-              Agendar demo gratuita <ArrowRight className="w-5 h-5" />
+              Criar conta grátis <ArrowRight className="w-5 h-5" />
             </a>
             <Link
               href="/auth/login"
@@ -199,7 +199,7 @@ export default function LandingPage() {
               Já tenho conta
             </Link>
           </div>
-          <p className="text-slate-500 text-sm mt-5">Demo gratuita · Sem cartão de crédito · Configuração em 1 hora</p>
+          <p className="text-slate-500 text-sm mt-5">14 dias grátis · Sem cartão de crédito · Configuração em 1 hora</p>
         </div>
 
         {/* Stats */}
@@ -292,12 +292,12 @@ export default function LandingPage() {
           </div>
           <div className="text-center mt-12">
             <a
-              href={waUrl}
+              href={ctaUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-4 rounded-xl transition-all hover:scale-105"
             >
-              Quero agendar minha demo <ArrowRight className="w-5 h-5" />
+              Quero começar agora <ArrowRight className="w-5 h-5" />
             </a>
           </div>
         </div>
@@ -312,7 +312,7 @@ export default function LandingPage() {
             </h2>
             <p className="text-slate-500 text-lg">Ajuste os números abaixo e veja o impacto real.</p>
           </div>
-          <Calculator waUrl={waUrl} />
+          <Calculator ctaUrl={ctaUrl} />
         </div>
       </section>
 
@@ -342,7 +342,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+              <a href={ctaUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
                 Começar grátis 14 dias
               </a>
             </div>
@@ -363,7 +363,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-white hover:bg-blue-50 text-blue-600 font-bold py-3 rounded-xl transition-colors text-sm">
+              <a href={ctaUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-white hover:bg-blue-50 text-blue-600 font-bold py-3 rounded-xl transition-colors text-sm">
                 Começar grátis 14 dias
               </a>
             </div>
@@ -383,7 +383,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+              <a href={ctaUrl} target="_blank" rel="noopener noreferrer" className="block text-center bg-slate-900 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl transition-colors text-sm">
                 Começar grátis 14 dias
               </a>
             </div>
@@ -431,13 +431,13 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-white/20 rounded-full px-4 py-1.5 mb-6">
             <Shield className="w-3.5 h-3.5 text-white" />
-            <span className="text-white text-sm font-medium">Demo gratuita · Sem compromisso</span>
+            <span className="text-white text-sm font-medium">14 dias grátis · Sem compromisso</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
             Sua oficina organizada em menos de 1 hora
           </h2>
           <p className="text-blue-100 text-lg mb-8 max-w-xl mx-auto">
-            Agende agora uma demo de 20 minutos e veja como o OficinaPro funciona na prática — com os dados da sua oficina.
+            Crie sua conta agora e comece a usar o OficinaPro hoje mesmo — 14 dias grátis, sem cartão de crédito.
           </p>
 
           <div className="bg-white/10 rounded-2xl p-6 mb-8 max-w-sm mx-auto text-left">
@@ -453,14 +453,14 @@ export default function LandingPage() {
           </div>
 
           <a
-            href={waUrl}
+            href={ctaUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-white text-blue-600 font-bold px-10 py-4 rounded-xl text-base transition-all hover:scale-105 shadow-xl"
           >
-            Agendar demo gratuita <ArrowRight className="w-5 h-5" />
+            Criar conta grátis <ArrowRight className="w-5 h-5" />
           </a>
-          <p className="text-blue-200 text-sm mt-4">Respondemos em menos de 2 horas</p>
+          <p className="text-blue-200 text-sm mt-4">Sem cartão de crédito · Cancele quando quiser</p>
         </div>
       </section>
 

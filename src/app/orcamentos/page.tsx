@@ -32,8 +32,12 @@ export default function OrcamentosPage() {
   const totalValue = filtered.reduce((acc, q) => acc + q.totalValue, 0);
 
   const handleApprove = async (id: string) => {
-    const result = await approve(id);
-    if (result) toast(`OS ${result.serviceOrder.os_number} criada automaticamente!`);
+    try {
+      const result = await approve(id);
+      if (result) toast(`OS ${result.serviceOrder.os_number} criada automaticamente!`);
+    } catch {
+      toast("Erro ao aprovar o orçamento. Tente novamente.", "error");
+    }
   };
 
   return (
@@ -146,7 +150,7 @@ export default function OrcamentosPage() {
                         {q.status === "rascunho" && (
                           <Button
                             variant="ghost" size="sm" className="h-7 text-xs text-blue-600"
-                            onClick={async () => { await update(q.id, { status: "enviado" }); toast("Orçamento enviado ao cliente!"); }}
+                            onClick={async () => { try { await update(q.id, { status: "enviado" }); toast("Orçamento enviado ao cliente!"); } catch { toast("Erro ao enviar o orçamento.", "error"); } }}
                           >
                             Enviar
                           </Button>

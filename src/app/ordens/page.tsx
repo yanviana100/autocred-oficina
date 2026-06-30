@@ -71,24 +71,36 @@ export default function OrdensPage() {
   const advance = async (id: string, current: ServiceOrderStatus) => {
     const next = nextStatus[current];
     if (!next) return;
-    await updateStatus(id, next);
-    toast(`OS → ${statusLabel[next]}`);
+    try {
+      await updateStatus(id, next);
+      toast(`OS → ${statusLabel[next]}`);
+    } catch {
+      toast("Erro ao atualizar o status da OS.", "error");
+    }
   };
 
   const handlePay = async () => {
     if (!payingId) return;
-    await markAsPaid(payingId, payMethod);
-    setPayingId(null);
-    toast("Pagamento registrado!");
+    try {
+      await markAsPaid(payingId, payMethod);
+      setPayingId(null);
+      toast("Pagamento registrado!");
+    } catch {
+      toast("Erro ao registrar o pagamento.", "error");
+    }
   };
 
   const handleSaveKm = async () => {
     if (!editingKm) return;
     const val = Number(editingKm.val);
     if (isNaN(val) || val < 0) { toast("KM inválido.", "warning"); return; }
-    await update(editingKm.id, editingKm.field === "entrada" ? { kmEntrada: val } : { kmSaida: val });
-    setEditingKm(null);
-    toast("KM salvo!");
+    try {
+      await update(editingKm.id, editingKm.field === "entrada" ? { kmEntrada: val } : { kmSaida: val });
+      setEditingKm(null);
+      toast("KM salvo!");
+    } catch {
+      toast("Erro ao salvar o KM.", "error");
+    }
   };
 
   const handleCreateAvulsa = async () => {
@@ -103,24 +115,33 @@ export default function OrdensPage() {
     setSavingAvulsa(true);
     const customer = customers.find((c) => c.id === avulsa.customerId);
     const vehicle = vehicles.find((v) => v.id === avulsa.vehicleId);
-    const newOs = await createAvulsa({
-      customerId: avulsa.customerId,
-      customerName: customer?.name ?? "",
-      vehicleId: avulsa.vehicleId,
-      vehicleInfo: vehicle ? `${vehicle.brand} ${vehicle.model} ${vehicle.year} — ${vehicle.plate}` : "",
-      serviceType: avulsa.serviceType,
-      problemDescription: avulsa.problemDescription,
-      technicianName: avulsa.technicianName || undefined,
-      totalValue: Number(avulsa.totalValue),
-      kmEntrada: avulsa.kmEntrada ? Number(avulsa.kmEntrada) : undefined,
-      expectedDate: avulsa.expectedDate || undefined,
-      notes: avulsa.notes || undefined,
-    });
-    setSavingAvulsa(false);
-    setShowAvulsa(false);
-    setAvulsa({ customerId: "", vehicleId: "", serviceType: "", problemDescription: "", technicianName: "", totalValue: "", kmEntrada: "", expectedDate: "", notes: "" });
-    toast("OS criada com sucesso!");
-    if (newOs?.id) router.push(`/ordens/${newOs.id}`);
+    try {
+      const newOs = await createAvulsa({
+        customerId: avulsa.customerId,
+        customerName: customer?.name ?? "",
+        vehicleId: avulsa.vehicleId,
+        vehicleInfo: vehicle ? `${vehicle.brand} ${vehicle.model} ${vehicle.year} — ${vehicle.plate}` : "",
+        serviceType: avulsa.serviceType,
+        problemDescription: avulsa.problemDescription,
+        technicianName: avulsa.technicianName || undefined,
+        totalValue: Number(avulsa.totalValue),
+        kmEntrada: avulsa.kmEntrada ? Number(avulsa.kmEntrada) : undefined,
+        expectedDate: avulsa.expectedDate || undefined,
+        notes: avulsa.notes || undefined,
+      });
+      if (!newOs?.id) {
+        toast("Não foi possível criar a OS. Tente novamente.", "error");
+        return;
+      }
+      setShowAvulsa(false);
+      setAvulsa({ customerId: "", vehicleId: "", serviceType: "", problemDescription: "", technicianName: "", totalValue: "", kmEntrada: "", expectedDate: "", notes: "" });
+      toast("OS criada com sucesso!");
+      router.push(`/ordens/${newOs.id}`);
+    } catch {
+      toast("Erro ao criar a OS. Tente novamente.", "error");
+    } finally {
+      setSavingAvulsa(false);
+    }
   };
 
   const totals = Object.fromEntries(

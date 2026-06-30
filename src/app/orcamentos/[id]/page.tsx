@@ -64,20 +64,25 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
     const invalid = editItems.filter((i) => !i.description.trim() || i.unitPrice <= 0);
     if (invalid.length > 0) { toast("Todos os itens precisam ter descrição e valor.", "warning"); return; }
     setSaving(true);
-    await update(id, {
-      serviceType: editServiceType,
-      problemDescription: editDescription,
-      estimatedDays: Number(editDays),
-      notes: editNotes,
-      totalValue: editTotal,
-      laborCost: editLaborCost,
-      items: editItems.map((i) => ({ ...i, total: i.quantity * i.unitPrice })),
-    });
-    const refreshed = await get(id);
-    setQuote(refreshed);
-    setEditing(false);
-    setSaving(false);
-    toast("Orçamento atualizado!");
+    try {
+      await update(id, {
+        serviceType: editServiceType,
+        problemDescription: editDescription,
+        estimatedDays: Number(editDays),
+        notes: editNotes,
+        totalValue: editTotal,
+        laborCost: editLaborCost,
+        items: editItems.map((i) => ({ ...i, total: i.quantity * i.unitPrice })),
+      });
+      const refreshed = await get(id);
+      setQuote(refreshed);
+      setEditing(false);
+      toast("Orçamento atualizado!");
+    } catch {
+      toast("Erro ao atualizar o orçamento. Tente novamente.", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loadingQuote) {

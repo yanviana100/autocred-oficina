@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { CreditCard, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Wrench, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,10 +27,9 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setError("E-mail ou senha incorretos."); setLoading(false); return; }
-    const { data: workshop } = await supabase.from("workshops").select("onboarding_completed").eq("id", data.user!.id).single();
-    router.push(workshop?.onboarding_completed ? "/dashboard" : "/onboarding");
+    router.push("/dashboard");
   };
 
   const handleReset = async (e: React.FormEvent) => {
@@ -50,7 +49,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4">
-            <CreditCard className="w-7 h-7 text-white" />
+            <Wrench className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">OficinaPro</h1>
           <p className="text-slate-400 text-sm mt-1">{mode === "login" ? "Entre na sua conta" : "Recuperar senha"}</p>

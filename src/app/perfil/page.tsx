@@ -272,7 +272,7 @@ export default function PerfilPage() {
                     <p className="font-medium text-sm text-slate-900">{t.name}</p>
                     {t.phone && <p className="text-xs text-slate-500">{t.phone}</p>}
                   </div>
-                  <button onClick={async () => { await removeTech(t.id); toast("Técnico removido."); }} className="text-slate-400 hover:text-red-500 p-1">
+                  <button onClick={async () => { try { await removeTech(t.id); toast("Técnico removido."); } catch { toast("Erro ao remover técnico.", "error"); } }} className="text-slate-400 hover:text-red-500 p-1">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -284,9 +284,13 @@ export default function PerfilPage() {
               <Button
                 onClick={async () => {
                   if (!newTechName.trim()) { toast("Nome obrigatório.", "warning"); return; }
-                  await createTech(newTechName.trim(), newTechPhone.trim() || undefined);
-                  setNewTechName(""); setNewTechPhone("");
-                  toast("Técnico adicionado!");
+                  try {
+                    await createTech(newTechName.trim(), newTechPhone.trim() || undefined);
+                    setNewTechName(""); setNewTechPhone("");
+                    toast("Técnico adicionado!");
+                  } catch {
+                    toast("Erro ao adicionar técnico.", "error");
+                  }
                 }}
                 className="gap-1 flex-shrink-0"
               >

@@ -29,7 +29,7 @@ export function useCustomers() {
     create: async (data: Omit<Customer, "id" | "createdAt">) => {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
-      const { data: row } = await supabase.from("customers").insert({
+      const { data: row, error } = await supabase.from("customers").insert({
         workshop_id: workshopId,
         name: data.name,
         cpf: data.cpf,
@@ -39,12 +39,13 @@ export function useCustomers() {
         city: data.city,
         state: data.state,
       }).select().single();
+      if (error) throw error;
       await refresh();
       return row ? dbToCustomer(row) : null;
     },
     update: async (id: string, data: Partial<Customer>) => {
       const supabase = getSupabase();
-      await supabase.from("customers").update({
+      const { error } = await supabase.from("customers").update({
         name: data.name,
         cpf: data.cpf,
         whatsapp: data.whatsapp,
@@ -53,11 +54,13 @@ export function useCustomers() {
         city: data.city,
         state: data.state,
       }).eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     remove: async (id: string) => {
       const supabase = getSupabase();
-      await supabase.from("customers").delete().eq("id", id);
+      const { error } = await supabase.from("customers").delete().eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     get: async (id: string) => {
@@ -96,7 +99,7 @@ export function useVehicles() {
     create: async (data: Omit<Vehicle, "id">) => {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
-      const { data: row } = await supabase.from("vehicles").insert({
+      const { data: row, error } = await supabase.from("vehicles").insert({
         customer_id: data.customerId,
         workshop_id: workshopId,
         brand: data.brand,
@@ -108,12 +111,13 @@ export function useVehicles() {
         mileage: data.mileage,
         notes: data.notes,
       }).select().single();
+      if (error) throw error;
       await refresh();
       return row ? dbToVehicle(row) : null;
     },
     update: async (id: string, data: Partial<Vehicle>) => {
       const supabase = getSupabase();
-      await supabase.from("vehicles").update({
+      const { error } = await supabase.from("vehicles").update({
         brand: data.brand,
         model: data.model,
         year: data.year,
@@ -123,11 +127,13 @@ export function useVehicles() {
         mileage: data.mileage,
         notes: data.notes,
       }).eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     remove: async (id: string) => {
       const supabase = getSupabase();
-      await supabase.from("vehicles").delete().eq("id", id);
+      const { error } = await supabase.from("vehicles").delete().eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     get: async (id: string) => {
@@ -174,7 +180,7 @@ export function useQuotes() {
     create: async (data: Omit<Quote, "id" | "createdAt">) => {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
-      const { data: row } = await supabase.from("quotes").insert({
+      const { data: row, error } = await supabase.from("quotes").insert({
         workshop_id: workshopId,
         customer_id: data.customerId,
         vehicle_id: data.vehicleId,
@@ -189,9 +195,10 @@ export function useQuotes() {
         status: data.status,
         public_token: data.publicToken,
       }).select().single();
+      if (error) throw error;
 
       if (row && data.items?.length) {
-        await supabase.from("quote_items").insert(
+        const { error: itemsError } = await supabase.from("quote_items").insert(
           data.items.map((item) => ({
             quote_id: row.id,
             description: item.description,
@@ -201,13 +208,14 @@ export function useQuotes() {
             total: item.total,
           }))
         );
+        if (itemsError) throw itemsError;
       }
       await refresh();
       return row ? { ...dbToQuote(row), items: data.items ?? [] } : null;
     },
     update: async (id: string, data: Partial<Quote> & { items?: Quote["items"] }) => {
       const supabase = getSupabase();
-      await supabase.from("quotes").update({
+      const { error } = await supabase.from("quotes").update({
         status: data.status,
         notes: data.notes,
         estimated_days: data.estimatedDays,
@@ -216,12 +224,14 @@ export function useQuotes() {
         service_type: data.serviceType,
         problem_description: data.problemDescription,
       }).eq("id", id);
+      if (error) throw error;
 
       // Se veio lista de itens, substitui tudo
       if (data.items) {
-        await supabase.from("quote_items").delete().eq("quote_id", id);
+        const { error: delError } = await supabase.from("quote_items").delete().eq("quote_id", id);
+        if (delError) throw delError;
         if (data.items.length > 0) {
-          await supabase.from("quote_items").insert(
+          const { error: insError } = await supabase.from("quote_items").insert(
             data.items.map((item) => ({
               quote_id: id,
               description: item.description,
@@ -231,6 +241,7 @@ export function useQuotes() {
               total: item.total,
             }))
           );
+          if (insError) throw insError;
         }
       }
       await refresh();
@@ -239,13 +250,15 @@ export function useQuotes() {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
 
-      await supabase.from("quotes").update({ status: "aprovado" }).eq("id", id);
+      const { error: updError } = await supabase.from("quotes").update({ status: "aprovado" }).eq("id", id);
+      if (updError) throw updError;
 
-      const { data: quote } = await supabase
+      const { data: quote, error: fetchError } = await supabase
         .from("quotes")
         .select("*, quote_items(*)")
         .eq("id", id)
         .single();
+      if (fetchError) throw fetchError;
 
       if (!quote) return null;
 
@@ -263,7 +276,7 @@ export function useQuotes() {
       }
       const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
 
-      const { data: os } = await supabase.from("service_orders").insert({
+      const { data: os, error: osError } = await supabase.from("service_orders").insert({
         os_number: osNumber,
         workshop_id: workshopId,
         quote_id: id,
@@ -280,13 +293,15 @@ export function useQuotes() {
         payment_status: "pendente",
         is_avulsa: false,
       }).select().single();
+      if (osError) throw osError;
 
       await refresh();
       return { quote: dbToQuote(quote), serviceOrder: os };
     },
     remove: async (id: string) => {
       const supabase = getSupabase();
-      await supabase.from("quotes").delete().eq("id", id);
+      const { error } = await supabase.from("quotes").delete().eq("id", id);
+      if (error) throw error;
       await refresh();
     },
   };
@@ -321,7 +336,8 @@ export function useServiceOrders() {
       const supabase = getSupabase();
       const updates: Record<string, unknown> = { status };
       if (status === "entregue") updates.completed_date = new Date().toISOString().split("T")[0];
-      await supabase.from("service_orders").update(updates).eq("id", id);
+      const { error } = await supabase.from("service_orders").update(updates).eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     update: async (id: string, data: Partial<ServiceOrder>) => {
@@ -334,16 +350,18 @@ export function useServiceOrders() {
       if (data.kmEntrada !== undefined) payload.km_entrada = data.kmEntrada;
       if (data.kmSaida !== undefined) payload.km_saida = data.kmSaida;
       if (data.totalValue !== undefined) payload.total_value = data.totalValue;
-      await supabase.from("service_orders").update(payload).eq("id", id);
+      const { error } = await supabase.from("service_orders").update(payload).eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     markAsPaid: async (id: string, method: PaymentMethod) => {
       const supabase = getSupabase();
-      await supabase.from("service_orders").update({
+      const { error } = await supabase.from("service_orders").update({
         payment_status: "pago",
         payment_method: method,
         paid_at: new Date().toISOString(),
       }).eq("id", id);
+      if (error) throw error;
       await refresh();
     },
     createAvulsa: async (data: {
@@ -376,7 +394,7 @@ export function useServiceOrders() {
       }
       const osNumber = `OS-${String(nextVal).padStart(4, "0")}`;
 
-      const { data: row } = await supabase.from("service_orders").insert({
+      const { data: row, error } = await supabase.from("service_orders").insert({
         os_number: osNumber,
         workshop_id: workshopId,
         customer_id: data.customerId,
@@ -395,6 +413,7 @@ export function useServiceOrders() {
         payment_status: "pendente",
         is_avulsa: true,
       }).select().single();
+      if (error) throw error;
 
       await refresh();
       return row ? dbToServiceOrder(row) : null;
@@ -438,12 +457,14 @@ export function useTechnicians() {
     create: async (name: string, phone?: string) => {
       const supabase = getSupabase();
       const workshopId = await getWorkshopId();
-      await supabase.from("technicians").insert({ workshop_id: workshopId, name, phone: phone ?? null });
+      const { error } = await supabase.from("technicians").insert({ workshop_id: workshopId, name, phone: phone ?? null });
+      if (error) throw error;
       await refresh();
     },
     remove: async (id: string) => {
       const supabase = getSupabase();
-      await supabase.from("technicians").delete().eq("id", id);
+      const { error } = await supabase.from("technicians").delete().eq("id", id);
+      if (error) throw error;
       await refresh();
     },
   };

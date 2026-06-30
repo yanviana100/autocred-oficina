@@ -179,28 +179,36 @@ export default function ClientesPage() {
   );
 
   const handleSave = async (data: Omit<Customer, "id" | "createdAt" | "workshopId">, vehicles: VehicleForm[]) => {
-    if (modal === "new") {
-      const customer = await create(data as Omit<Customer, "id" | "createdAt">);
-      if (customer && vehicles.length > 0) {
-        const validVehicles = vehicles.filter((v) => v.plate.trim() && v.brand && v.model.trim() && v.year);
-        for (const v of validVehicles) {
-          await createVehicle({
-            customerId: customer.id,
-            plate: v.plate.trim().toUpperCase(),
-            brand: v.brand,
-            model: v.model.trim(),
-            year: Number(v.year),
-            mileage: Number(v.mileage) || 0,
-            color: v.color.trim() || undefined,
-          });
+    try {
+      if (modal === "new") {
+        const customer = await create(data as Omit<Customer, "id" | "createdAt">);
+        if (!customer) {
+          toast("Não foi possível cadastrar o cliente. Tente novamente.", "error");
+          return;
         }
+        if (vehicles.length > 0) {
+          const validVehicles = vehicles.filter((v) => v.plate.trim() && v.brand && v.model.trim() && v.year);
+          for (const v of validVehicles) {
+            await createVehicle({
+              customerId: customer.id,
+              plate: v.plate.trim().toUpperCase(),
+              brand: v.brand,
+              model: v.model.trim(),
+              year: Number(v.year),
+              mileage: Number(v.mileage) || 0,
+              color: v.color.trim() || undefined,
+            });
+          }
+        }
+        toast(vehicles.filter((v) => v.plate.trim()).length > 0 ? "Cliente e veículo(s) cadastrados!" : "Cliente cadastrado!");
+      } else if (modal && typeof modal === "object") {
+        await update((modal as Customer).id, data);
+        toast("Cliente atualizado!");
       }
-      toast(vehicles.filter((v) => v.plate.trim()).length > 0 ? "Cliente e veículo(s) cadastrados!" : "Cliente cadastrado!");
-    } else if (modal && typeof modal === "object") {
-      await update((modal as Customer).id, data);
-      toast("Cliente atualizado!");
+      setModal(null);
+    } catch {
+      toast("Erro ao salvar. Verifique os dados e tente novamente.", "error");
     }
-    setModal(null);
   };
 
   return (
@@ -225,7 +233,7 @@ export default function ClientesPage() {
             <p className="text-sm text-slate-500 mb-6">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setConfirmDelete(null)}>Cancelar</Button>
-              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={async () => { await remove(confirmDelete); setConfirmDelete(null); toast("Cliente removido.", "warning"); }}>Excluir</Button>
+              <Button className="flex-1 bg-red-600 hover:bg-red-700 text-white" onClick={async () => { try { await remove(confirmDelete); setConfirmDelete(null); toast("Cliente removido.", "warning"); } catch { toast("Erro ao excluir cliente.", "error"); } }}>Excluir</Button>
             </div>
           </div>
         </div>

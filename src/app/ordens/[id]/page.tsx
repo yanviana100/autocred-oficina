@@ -86,42 +86,64 @@ export default function OrdemDetailPage({ params }: { params: Promise<{ id: stri
     const next = nextStatus[order.status];
     if (!next) return;
     setAdvancing(true);
-    await updateStatus(id, next);
-    setOrder({ ...order, status: next });
-    toast(`OS → ${statusLabel[next]}`);
-    setAdvancing(false);
+    try {
+      await updateStatus(id, next);
+      setOrder({ ...order, status: next });
+      toast(`OS → ${statusLabel[next]}`);
+    } catch {
+      toast("Erro ao atualizar o status da OS.", "error");
+    } finally {
+      setAdvancing(false);
+    }
   };
 
   const handlePay = async () => {
     setPaying(true);
-    await markAsPaid(id, payMethod);
-    setOrder({ ...order, paymentStatus: "pago", paymentMethod: payMethod });
-    setShowPayModal(false);
-    toast("Pagamento registrado!");
-    setPaying(false);
+    try {
+      await markAsPaid(id, payMethod);
+      setOrder({ ...order, paymentStatus: "pago", paymentMethod: payMethod });
+      setShowPayModal(false);
+      toast("Pagamento registrado!");
+    } catch {
+      toast("Erro ao registrar o pagamento.", "error");
+    } finally {
+      setPaying(false);
+    }
   };
 
   const handleSaveKm = async () => {
     if (!editingKm) return;
     const val = Number(editingKm.val);
     if (isNaN(val) || val < 0) { toast("KM inválido.", "warning"); return; }
-    await update(id, editingKm.field === "entrada" ? { kmEntrada: val } : { kmSaida: val });
-    setOrder({ ...order, ...(editingKm.field === "entrada" ? { kmEntrada: val } : { kmSaida: val }) });
-    setEditingKm(null);
-    toast("KM salvo!");
+    try {
+      await update(id, editingKm.field === "entrada" ? { kmEntrada: val } : { kmSaida: val });
+      setOrder({ ...order, ...(editingKm.field === "entrada" ? { kmEntrada: val } : { kmSaida: val }) });
+      setEditingKm(null);
+      toast("KM salvo!");
+    } catch {
+      toast("Erro ao salvar o KM.", "error");
+    }
   };
 
   const handleSaveTech = async () => {
-    await update(id, { technicianName: techName });
-    setOrder({ ...order, technicianName: techName });
-    setEditingTech(false);
-    toast("Técnico atribuído!");
+    try {
+      await update(id, { technicianName: techName });
+      setOrder({ ...order, technicianName: techName });
+      setEditingTech(false);
+      toast("Técnico atribuído!");
+    } catch {
+      toast("Erro ao atribuir o técnico.", "error");
+    }
   };
 
   const handleStatusChange = async (newStatus: ServiceOrderStatus) => {
-    await updateStatus(id, newStatus);
-    setOrder({ ...order, status: newStatus });
-    toast(`Status → ${statusLabel[newStatus]}`);
+    try {
+      await updateStatus(id, newStatus);
+      setOrder({ ...order, status: newStatus });
+      toast(`Status → ${statusLabel[newStatus]}`);
+    } catch {
+      toast("Erro ao alterar o status.", "error");
+    }
   };
 
   // Progress bar

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ArrowLeft, Save, CreditCard } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, Save } from "lucide-react";
 import { useCustomers, useVehicles, useQuotes } from "@/hooks/useStore";
 import { getWorkshopId } from "@/lib/db";
 import { useToast } from "@/components/ui/toast";
@@ -62,7 +62,7 @@ export default function NovoOrcamentoPage() {
   const totalMaoDeObra = items.filter((i) => i.type === "mao_de_obra").reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const total          = totalPecas + totalMaoDeObra;
 
-  const handleSave = async (goToFinanciamento = false) => {
+  const handleSave = async () => {
     if (!form.customerId || !form.vehicleId || !form.serviceType || !form.problemDescription) {
       toast("Preencha cliente, veículo, tipo de serviço e descrição.", "warning");
       return;
@@ -89,30 +89,35 @@ export default function NovoOrcamentoPage() {
       total: i.quantity * i.unitPrice,
     }));
 
-    const newQuote = await createQuote({
-      workshopId: (await getWorkshopId()) ?? "",
-      customerId: form.customerId,
-      vehicleId:  form.vehicleId,
-      customerName: customer?.name ?? "",
-      vehicleInfo: vehicle ? `${vehicle.brand} ${vehicle.model} ${vehicle.year} — ${vehicle.plate}` : "",
-      serviceType: form.serviceType,
-      problemDescription: form.problemDescription,
-      estimatedDays: Number(form.estimatedDays),
-      notes: form.notes,
-      status: "rascunho",
-      laborCost: totalMaoDeObra,
-      totalValue: total,
-      publicToken: `pub_${Date.now()}`,
-      items: quoteItems,
-    });
+    try {
+      const newQuote = await createQuote({
+        workshopId: (await getWorkshopId()) ?? "",
+        customerId: form.customerId,
+        vehicleId:  form.vehicleId,
+        customerName: customer?.name ?? "",
+        vehicleInfo: vehicle ? `${vehicle.brand} ${vehicle.model} ${vehicle.year} — ${vehicle.plate}` : "",
+        serviceType: form.serviceType,
+        problemDescription: form.problemDescription,
+        estimatedDays: Number(form.estimatedDays),
+        notes: form.notes,
+        status: "rascunho",
+        laborCost: totalMaoDeObra,
+        totalValue: total,
+        publicToken: crypto.randomUUID(),
+        items: quoteItems,
+      });
 
-    toast("Orçamento salvo com sucesso!");
-    setSaving(false);
+      if (!newQuote?.id) {
+        toast("Não foi possível salvar o orçamento. Tente novamente.", "error");
+        setSaving(false);
+        return;
+      }
 
-    if (goToFinanciamento) {
-      router.push(`/financiamento?quoteId=${newQuote?.id}&amount=${total}`);
-    } else {
-      router.push(`/orcamentos/${newQuote?.id}`);
+      toast("Orçamento salvo com sucesso!");
+      router.push(`/orcamentos/${newQuote.id}`);
+    } catch {
+      toast("Erro ao salvar o orçamento. Tente novamente.", "error");
+      setSaving(false);
     }
   };
 
@@ -244,16 +249,10 @@ export default function NovoOrcamentoPage() {
                   <div className="flex justify-between text-lg font-bold text-blue-600 pt-2 border-t"><span>Total</span><span>{formatCurrency(total)}</span></div>
                 </div>
                 <div className="space-y-2">
-                  <Button className="w-full gap-2" onClick={() => handleSave(false)} disabled={saving}>
+                  <Button className="w-full gap-2" onClick={() => handleSave()} disabled={saving}>
                     <Save className="w-4 h-4" />{saving ? "Salvando..." : "Salvar Orçamento"}
                   </Button>
-                  <Button variant="outline" className="w-full gap-2 border-green-500 text-green-700 hover:bg-green-50" onClick={() => handleSave(true)} disabled={saving || total === 0}>
-                    <CreditCard className="w-4 h-4" />Solicitar Crédito
-                  </Button>
                 </div>
-                <p className="text-xs text-amber-700 bg-amber-50 rounded-lg p-3 border border-amber-100 leading-relaxed">
-                  <strong>Simulação apenas:</strong> o financiamento não é aprovado automaticamente. A análise é feita por parceiro financeiro autorizado.
-                </p>
               </CardContent>
             </Card>
           </div>

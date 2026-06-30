@@ -66,19 +66,24 @@ export default function ClienteDetailPage({ params }: { params: Promise<{ id: st
     }
     if (!customer) return;
     setSavingVehicle(true);
-    await createVehicle({
-      customerId: id,
-      plate: vForm.plate.trim().toUpperCase(),
-      brand: vForm.brand,
-      model: vForm.model.trim(),
-      year: Number(vForm.year),
-      mileage: Number(vForm.mileage) || 0,
-      color: vForm.color.trim() || undefined,
-    });
-    setVForm({ plate: "", brand: "", model: "", year: "", mileage: "", color: "" });
-    setShowAddVehicle(false);
-    setSavingVehicle(false);
-    toast("Veículo adicionado!");
+    try {
+      await createVehicle({
+        customerId: id,
+        plate: vForm.plate.trim().toUpperCase(),
+        brand: vForm.brand,
+        model: vForm.model.trim(),
+        year: Number(vForm.year),
+        mileage: Number(vForm.mileage) || 0,
+        color: vForm.color.trim() || undefined,
+      });
+      setVForm({ plate: "", brand: "", model: "", year: "", mileage: "", color: "" });
+      setShowAddVehicle(false);
+      toast("Veículo adicionado!");
+    } catch {
+      toast("Erro ao adicionar veículo. Tente novamente.", "error");
+    } finally {
+      setSavingVehicle(false);
+    }
   };
 
   if (loading) {

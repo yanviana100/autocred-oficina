@@ -10,7 +10,7 @@ import {
 const NAV_LINKS = [
   { label: "Funcionalidades", href: "#funcionalidades" },
   { label: "Planos", href: "#planos" },
-  { label: "Depoimentos", href: "#depoimentos" },
+  { label: "Por que OficinaPro", href: "#confianca" },
 ];
 
 const PROBLEMS = [
@@ -34,10 +34,10 @@ const STEPS = [
   { n: "03", title: "Comece a usar", desc: "Crie sua primeira OS no mesmo dia. Sua equipe aprende em minutos — sem treinamento longo." },
 ];
 
-const TESTIMONIALS = [
-  { name: "Carlos M.", role: "Dono · Auto Center Silva", text: "Antes eu não sabia quanto dinheiro minha oficina ganhava no mês. Hoje abro o relatório e vejo tudo na hora." },
-  { name: "Roberto A.", role: "Gerente · Oficina Rápida", text: "O cliente chegou reclamando de um problema que a gente já tinha resolvido há 3 meses. Abri o histórico e mostrei na hora. Nunca mais tive esse problema." },
-  { name: "Marcos P.", role: "Proprietário · MecaFix", text: "Minha equipe adotou em dois dias. O orçamento em PDF impressionou os clientes — parece empresa grande." },
+const TRUST_BADGES = [
+  { icon: Shield, title: "Seus dados protegidos", desc: "Cada oficina acessa apenas os próprios dados. Conformidade total com a LGPD." },
+  { icon: Zap, title: "Configuração em 1 hora", desc: "Sua oficina no sistema no mesmo dia, com seus primeiros dados já cadastrados." },
+  { icon: Users, title: "Suporte humano por WhatsApp", desc: "Fale com gente de verdade quando precisar. Sem robô, sem ticket esquecido." },
 ];
 
 const CHECKLIST = [
@@ -398,29 +398,30 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* DEPOIMENTOS */}
-      <section id="depoimentos" className="py-20 px-4 bg-white">
+      {/* CREDIBILIDADE */}
+      <section id="confianca" className="py-20 px-4 bg-white">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-              Oficinas que já transformaram a gestão
+              Feito para oficinas levarem a gestão a sério
             </h2>
+            <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+              Construído junto com oficinas reais, testando cada funcionalidade no dia a dia da mecânica.
+            </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-4 h-4 text-amber-400 fill-amber-400" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                  ))}
+            {TRUST_BADGES.map((b) => {
+              const Icon = b.icon;
+              return (
+                <div key={b.title} className="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                  <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <p className="font-bold text-slate-900 mb-1">{b.title}</p>
+                  <p className="text-slate-600 text-sm leading-relaxed">{b.desc}</p>
                 </div>
-                <p className="text-slate-700 text-sm leading-relaxed mb-4">&ldquo;{t.text}&rdquo;</p>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">{t.name}</p>
-                  <p className="text-xs text-slate-500">{t.role}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

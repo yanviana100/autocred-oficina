@@ -28,8 +28,17 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Rotas desativadas — funcionalidades de crédito não fazem parte do produto atual.
+  // Código preservado, mas inacessível. Redireciona para o dashboard.
+  const disabledRoutes = ["/fluxo", "/pipeline", "/financiamento", "/simulador", "/parceiros", "/billing", "/investidor"];
+  if (disabledRoutes.some((r) => pathname.startsWith(r))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
   // Rotas públicas — não precisam de login
-  const publicRoutes = ["/auth/login", "/auth/cadastro", "/auth/nova-senha", "/orcamento/publico", "/investidor"];
+  const publicRoutes = ["/auth/login", "/auth/cadastro", "/auth/nova-senha", "/orcamento/publico"];
   const isPublic = publicRoutes.some((r) => pathname.startsWith(r));
 
   if (!user && !isPublic) {

@@ -6,20 +6,14 @@ import {
   Users,
   Car,
   FileText,
-  CreditCard,
-  GitBranch,
+  Wrench,
   LogOut,
   Shield,
   ChevronLeft,
   ChevronRight,
-  LayoutGrid,
-  Calculator,
-  Building2,
   Store,
-  TrendingUp,
   ClipboardList,
   BarChart2,
-  Receipt,
   CalendarDays,
 } from "lucide-react";
 import { cn, planLabel } from "@/lib/utils";
@@ -41,8 +35,6 @@ const mainItems: NavItem[] = [
 ];
 
 const plataformaItems: NavItem[] = [
-  { href: "/billing", label: "Plano & Cobrança", icon: Receipt },
-  { href: "/parceiros", label: "Parceiros", icon: Building2 },
   { href: "/perfil", label: "Minha Oficina", icon: Store },
   { href: "/admin", label: "Admin", icon: Shield },
 ];
@@ -112,12 +104,12 @@ export function Sidebar({ onClose }: { onClose?: () => void }) {
       {/* Logo */}
       <div className={cn("flex items-center gap-3 px-4 py-5 border-b border-slate-700", collapsed && "justify-center px-2")}>
         <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-blue-600 flex-shrink-0">
-          <CreditCard className="w-5 h-5 text-white" />
+          <Wrench className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
           <div>
-            <p className="font-bold text-sm leading-tight">AutoCred</p>
-            <p className="text-xs text-blue-400 leading-tight">Crédito Automotivo</p>
+            <p className="font-bold text-sm leading-tight">OficinaPro</p>
+            <p className="text-xs text-blue-400 leading-tight">Gestão de Oficina</p>
           </div>
         )}
       </div>

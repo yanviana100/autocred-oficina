@@ -1,15 +1,14 @@
 "use client";
-import { use } from "react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, User, Car, FileText, CreditCard, Share2, CheckCircle, Copy, Printer, Pencil, Trash2, Plus, Save, X, PenLine } from "lucide-react";
+import { ArrowLeft, User, Car, FileText, Share2, CheckCircle, Copy, Printer, Pencil, Trash2, Plus, Save, X, PenLine } from "lucide-react";
 import { useQuotes } from "@/hooks/useStore";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency, formatDate, quoteStatusLabel, quoteStatusColor } from "@/lib/utils";
@@ -18,8 +17,8 @@ import type { Quote, QuoteStatus, QuoteItem } from "@/types";
 const statusFlow: QuoteStatus[] = ["rascunho", "enviado", "aguardando_aprovacao", "aprovado", "concluido"];
 const serviceTypes = ["Motor","Câmbio","Suspensão","Freios","Elétrica","Ar-condicionado","Funilaria","Pintura","Revisão","Alinhamento e Balanceamento","Escapamento","Outro"];
 
-export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function OrcamentoDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { get, update, approve } = useQuotes();
   const { toast } = useToast();
@@ -337,11 +336,6 @@ export default function OrcamentoDetailPage({ params }: { params: Promise<{ id: 
             <Link href={`/orcamento/publico?token=${quote.publicToken}`} target="_blank">
               <Button variant="outline" className="w-full gap-2">
                 <Share2 className="w-4 h-4" />Ver página do cliente
-              </Button>
-            </Link>
-            <Link href={`/financiamento?quoteId=${quote.id}&amount=${quote.totalValue}`}>
-              <Button className="w-full gap-2 mt-1">
-                <CreditCard className="w-4 h-4" />Solicitar crédito
               </Button>
             </Link>
           </div>

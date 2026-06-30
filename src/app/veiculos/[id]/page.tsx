@@ -1,5 +1,6 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +20,8 @@ const statusColor: Record<string, string> = {
   finalizado: "bg-emerald-100 text-emerald-700", entregue: "bg-green-100 text-green-700",
 };
 
-export default function VeiculoDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function VeiculoDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [orders, setOrders] = useState<ServiceOrder[]>([]);

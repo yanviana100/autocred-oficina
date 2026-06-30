@@ -207,7 +207,7 @@ function OrcamentoPublicoContent() {
         )}
 
         <p className="text-center text-xs text-slate-400 pb-6">
-          OficinaPro · Esta plataforma não realiza operações financeiras. Simulações são apenas estimativas e não representam oferta de crédito.
+          Orçamento gerado por <span className="font-medium text-slate-500">OficinaPro</span> · Sistema de gestão para oficinas mecânicas
         </p>
       </main>
     </div>

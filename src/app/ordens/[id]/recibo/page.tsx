@@ -1,5 +1,6 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { getSupabase, getWorkshopId } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import type { ServiceOrder } from "@/types";
@@ -16,8 +17,8 @@ function formatDate(iso?: string) {
 
 interface Workshop { name: string; owner: string; cnpj: string; whatsapp: string; city: string; state: string; }
 
-export default function ReciboPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ReciboPage() {
+  const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<ServiceOrder | null>(null);
   const [workshop, setWorkshop] = useState<Workshop | null>(null);
   const [loading, setLoading] = useState(true);

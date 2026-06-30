@@ -1,6 +1,6 @@
 "use client";
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,8 +36,8 @@ const paymentLabels: Record<PaymentMethod, string> = {
   cartao_debito: "Cartão Débito", boleto: "Boleto", cheque: "Cheque",
 };
 
-export default function OrdemDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function OrdemDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { get, updateStatus, update, markAsPaid } = useServiceOrders();
   const { technicians } = useTechnicians();

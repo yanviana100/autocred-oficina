@@ -1,5 +1,6 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,8 +26,8 @@ const osStatusColor: Record<string, string> = {
 
 const marcas = ["Toyota","Honda","Volkswagen","Chevrolet","Ford","Hyundai","Fiat","Renault","Nissan","Jeep","Mitsubishi","Kia","Outras"];
 
-export default function ClienteDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ClienteDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const { get: getCustomer } = useCustomers();
   const { byCustomer: vehiclesByCustomer, create: createVehicle } = useVehicles();
   const { byCustomer: quotesByCustomer } = useQuotes();

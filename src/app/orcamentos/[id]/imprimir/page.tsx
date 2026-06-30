@@ -1,5 +1,6 @@
 "use client";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { getSupabase, getWorkshopId } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 import type { Quote } from "@/types";
@@ -18,8 +19,8 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR");
 }
 
-export default function ImprimirOrcamentoPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ImprimirOrcamentoPage() {
+  const { id } = useParams<{ id: string }>();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [workshop, setWorkshop] = useState<Workshop | null>(null);
   const [loading, setLoading] = useState(true);
